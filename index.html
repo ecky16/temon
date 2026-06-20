@@ -68,9 +68,10 @@
               <tr>
                 <th>Nama Teknisi</th>
                 <th>Pekerjaan</th>
-                <th>STO</th>
-                <th>Partner</th>
-                <th>Status Pekerjaan</th>
+                <th>STO & Tim</th>
+                <th>Waktu (Mulai - Selesai)</th>
+                <th>Durasi</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody id="history-body">
@@ -118,14 +119,13 @@
       }
     }
 
-    function renderCards(data) {
+   function renderCards(data) {
       var container = document.getElementById('container-teknisi');
       container.innerHTML = '';
       
-      // AUTO SORTING RAPI: 1. Progress, 2. Idle (Masuk), 3. Libur
       data.sort((a, b) => {
-        let rankA = a.status === 'Progress' ? 1 : (a.jadwal === 'Libur' ? 3 : 2);
-        let rankB = b.status === 'Progress' ? 1 : (b.jadwal === 'Libur' ? 3 : 2);
+        let rankA = a.status === 'Mengerjakan' ? 1 : (a.jadwal === 'Libur' ? 3 : 2);
+        let rankB = b.status === 'Mengerjakan' ? 1 : (b.jadwal === 'Libur' ? 3 : 2);
         return rankA - rankB;
       });
       
@@ -137,7 +137,6 @@
         var indicatorColor = isIdle ? "#198754" : "#dc3545";
         var textStatus = item.status.toUpperCase();
 
-        // Timpa desain kalau dia Libur dan tidak ada kerjaan
         if(isLibur && isIdle) {
             badgeClass = "bg-libur";
             indicatorColor = "#ffc107";
@@ -153,22 +152,21 @@
                   <div>
                     <h5 class="card-title fw-bold mb-0 text-dark">${item.nama}</h5>
                     <small class="text-muted">NIK: ${item.nik}</small>
-                    <div class="mt-1">
-                      <span class="badge ${isLibur ? 'bg-warning text-dark' : 'bg-primary'}">${item.jadwal}</span>
-                    </div>
+                    <div class="mt-1"><span class="badge ${isLibur ? 'bg-warning text-dark' : 'bg-primary'}">${item.jadwal}</span></div>
                   </div>
                   <span class="status-badge ${badgeClass}">${textStatus}</span>
                 </div>
-                
                 <hr class="text-muted opacity-25 my-2">
-                
                 <div class="mt-auto">
-                  ${item.status === 'Progress' ? `
+                  ${item.status === 'Mengerjakan' ? `
                     <div class="job-box">
                       <strong class="d-block text-danger mb-1" style="font-size:0.95rem;">🛠 ${item.detail.pekerjaan}</strong>
                       <div class="d-flex justify-content-between align-items-center mb-1">
                         <small class="text-dark fw-semibold">📍 STO ${item.detail.sto}</small>
                         <span class="badge bg-secondary opacity-75">🕒 ${item.detail.mulai}</span>
+                      </div>
+                      <div class="mb-1 bg-white p-1 rounded border border-danger text-center">
+                        <small class="text-danger fw-bold">⏳ Sedang berjalan: ${item.detail.durasi}</small>
                       </div>
                       <small class="text-muted d-block mt-2 border-top pt-1">
                         👥 <b>Tim:</b> ${item.detail.utama} ${item.detail.partner && item.detail.partner !== '-' ? `& ${item.detail.partner}` : '(Sendiri)'}
