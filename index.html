@@ -10,46 +10,110 @@
     .card-tech { border: none; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); transition: transform 0.2s; height: 100%; }
     .card-tech:hover { transform: translateY(-5px); }
     .status-badge { font-weight: 600; padding: 6px 15px; border-radius: 20px; font-size: 0.85rem; letter-spacing: 0.5px; }
+    
     .bg-idle { background-color: #d1e7dd; color: #0f5132; }
     .bg-working { background-color: #f8d7da; color: #842029; }
+    .bg-libur { background-color: #fff3cd; color: #856404; }
+    
     .indicator-line { height: 6px; border-radius: 10px 10px 0 0; }
     .job-box { background-color: #fff5f5; border: 1px solid #fed7d7; padding: 10px; border-radius: 6px; }
     .idle-box { background-color: #f8fafc; border: 1px dashed #cbd5e0; padding: 15px; border-radius: 6px; }
+    
+    .nav-tabs .nav-link { font-weight: bold; color: #1a365d; cursor: pointer; border: none; }
+    .nav-tabs .nav-link.active { color: #dc3545; border-bottom: 3px solid #dc3545; background-color: transparent; }
   </style>
 </head>
 <body>
   <div class="container mb-5">
     <div class="header-bar d-flex justify-content-between align-items-center mb-4">
       <div>
-        <h3 class="m-0 fw-bold">🚀 Live Dashboard Teknisi</h3>
+        <h3 class="m-0 fw-bold">🚀 Dashboard Teknisi</h3>
         <small class="text-light opacity-75">Sistem Monitoring Terintegrasi Real-Time</small>
       </div>
       <div class="text-end">
         <div id="last-update" class="text-warning small mb-1">Memuat data...</div>
-        <button onclick="loadData()" class="btn btn-light btn-sm fw-bold text-primary shadow-sm">🔄 Refresh</button>
+        <button onclick="refreshCurrentTab()" class="btn btn-light btn-sm fw-bold text-primary shadow-sm">🔄 Refresh</button>
       </div>
     </div>
 
+    <ul class="nav nav-tabs mb-4">
+      <li class="nav-item">
+        <a class="nav-link active" id="tab-live" onclick="switchTab('live')">📡 Live Monitoring</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="tab-history" onclick="switchTab('history')">📅 History Pekerjaan</a>
+      </li>
+    </ul>
+
     <div id="loader" class="text-center my-5">
       <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
-      <h5 class="mt-3 text-muted">Sinkronisasi Data...</h5>
+      <h5 class="mt-3 text-muted" id="loader-text">Sinkronisasi Data...</h5>
     </div>
 
-    <div id="container-teknisi" class="row g-4 d-none"></div>
+    <div id="content-live" class="d-none">
+      <div id="container-teknisi" class="row g-4"></div>
+    </div>
+
+    <div id="content-history" class="d-none">
+      <div class="card p-4 border-0 shadow-sm rounded-3">
+        <div class="row mb-3 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label fw-bold text-muted">Filter Tanggal:</label>
+            <input type="date" id="date-filter" class="form-control border-primary" onchange="filterHistory()">
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-dark">
+              <tr>
+                <th>Nama Teknisi</th>
+                <th>Pekerjaan</th>
+                <th>STO</th>
+                <th>Partner</th>
+                <th>Status Pekerjaan</th>
+              </tr>
+            </thead>
+            <tbody id="history-body">
+              <tr><td colspan="5" class="text-center text-muted py-4">Memuat data history...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
+    let currentTab = 'live';
+    let historyData = [];
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.getElementById('tab-live').classList.toggle('active', tab === 'live');
+      document.getElementById('tab-history').classList.toggle('active', tab === 'history');
+      
+      document.getElementById('content-live').classList.toggle('d-none', tab !== 'live');
+      document.getElementById('content-history').classList.toggle('d-none', tab !== 'history');
+      
+      if(tab === 'history' && historyData.length === 0) {
+        loadHistory();
+      }
+    }
+
+    function refreshCurrentTab() {
+      if(currentTab === 'live') loadData();
+      else loadHistory();
+    }
+
+    // ================= LIVE TAB =================
     async function loadData() {
       document.getElementById('loader').classList.remove('d-none');
-      document.getElementById('container-teknisi').classList.add('d-none');
+      document.getElementById('content-live').classList.add('d-none');
       
       try {
-        // Mengambil data dari Vercel API
         const response = await fetch('/api/dashboard');
         const data = await response.json();
         renderCards(data);
       } catch (error) {
-        console.error("Gagal mengambil data:", error);
         document.getElementById('last-update').innerHTML = "Gagal memuat data!";
       }
     }
@@ -58,10 +122,27 @@
       var container = document.getElementById('container-teknisi');
       container.innerHTML = '';
       
+      // AUTO SORTING RAPI: 1. Mengerjakan, 2. Idle (Masuk), 3. Libur
+      data.sort((a, b) => {
+        let rankA = a.status === 'Mengerjakan' ? 1 : (a.jadwal === 'Libur' ? 3 : 2);
+        let rankB = b.status === 'Mengerjakan' ? 1 : (b.jadwal === 'Libur' ? 3 : 2);
+        return rankA - rankB;
+      });
+      
       data.forEach(function(item) {
         var isIdle = item.status === "Idle";
+        var isLibur = item.jadwal === "Libur";
+        
         var badgeClass = isIdle ? "bg-idle" : "bg-working";
         var indicatorColor = isIdle ? "#198754" : "#dc3545";
+        var textStatus = item.status.toUpperCase();
+
+        // Timpa desain kalau dia Libur dan tidak ada kerjaan
+        if(isLibur && isIdle) {
+            badgeClass = "bg-libur";
+            indicatorColor = "#ffc107";
+            textStatus = "LIBUR";
+        }
         
         var cardHtml = `
           <div class="col-md-4 col-lg-3">
@@ -72,18 +153,17 @@
                   <div>
                     <h5 class="card-title fw-bold mb-0 text-dark">${item.nama}</h5>
                     <small class="text-muted">NIK: ${item.nik}</small>
+                    <div class="mt-1">
+                      <span class="badge ${isLibur ? 'bg-warning text-dark' : 'bg-primary'}">${item.jadwal}</span>
+                    </div>
                   </div>
-                  <span class="status-badge ${badgeClass}">${item.status.toUpperCase()}</span>
+                  <span class="status-badge ${badgeClass}">${textStatus}</span>
                 </div>
                 
                 <hr class="text-muted opacity-25 my-2">
-                <div class="mb-2">
-  <span class="badge ${item.jadwal === 'Libur' ? 'bg-warning text-dark' : 'bg-primary'}">
-    ${item.jadwal}
-  </span>
-</div>
+                
                 <div class="mt-auto">
-                  ${!isIdle ? `
+                  ${item.status === 'Mengerjakan' ? `
                     <div class="job-box">
                       <strong class="d-block text-danger mb-1" style="font-size:0.95rem;">🛠 ${item.detail.pekerjaan}</strong>
                       <div class="d-flex justify-content-between align-items-center mb-1">
@@ -96,8 +176,8 @@
                     </div>
                   ` : `
                     <div class="idle-box text-center text-muted">
-                      <span style="font-size: 1.5rem;">☕</span><br>
-                      <small>Siap menerima order baru</small>
+                      <span style="font-size: 1.5rem;">${isLibur ? '🏖️' : '☕'}</span><br>
+                      <small>${isLibur ? 'Sedang libur tugas' : 'Siap menerima order baru'}</small>
                     </div>
                   `}
                 </div>
@@ -108,18 +188,63 @@
         container.innerHTML += cardHtml;
       });
       
-      var now = new Date();
-      var timeString = ("0" + now.getHours()).slice(-2) + ":" + ("0" + now.getMinutes()).slice(-2) + ":" + ("0" + now.getSeconds()).slice(-2);
-      document.getElementById('last-update').innerHTML = "Update terakhir: " + timeString;
-      
+      updateJam();
       document.getElementById('loader').classList.add('d-none');
-      container.classList.remove('d-none');
+      if(currentTab === 'live') document.getElementById('content-live').classList.remove('d-none');
     }
 
-    // Auto-refresh 30 detik
+    // ================= HISTORY TAB =================
+    async function loadHistory() {
+      document.getElementById('loader').classList.remove('d-none');
+      try {
+        const response = await fetch('/api/history');
+        historyData = await response.json();
+        
+        // Otomatis isi kolom filter dengan tanggal hari ini
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('date-filter').value = today;
+        
+        filterHistory();
+      } catch (error) {
+        document.getElementById('history-body').innerHTML = '<tr><td colspan="5" class="text-center text-danger">Gagal memuat history.</td></tr>';
+      } finally {
+        document.getElementById('loader').classList.add('d-none');
+      }
+    }
+
+    function filterHistory() {
+      const selectedDate = document.getElementById('date-filter').value;
+      const tbody = document.getElementById('history-body');
+      
+      if (!selectedDate) return;
+
+      const filtered = historyData.filter(h => h.tanggal === selectedDate);
+      
+      if (filtered.length === 0) {
+         tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">Kosong. Tidak ada pekerjaan di tanggal ${selectedDate}</td></tr>`;
+         return;
+      }
+
+      tbody.innerHTML = filtered.map(h => `
+        <tr>
+          <td class="fw-bold text-dark">${h.nama}</td>
+          <td class="text-primary fw-semibold">${h.pekerjaan}</td>
+          <td><span class="badge bg-secondary">${h.sto}</span></td>
+          <td>${h.partner || '-'}</td>
+          <td><span class="badge ${h.status === 'selesai' ? 'bg-success' : 'bg-danger'}">${h.status.toUpperCase()}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function updateJam() {
+      var now = new Date();
+      var ts = ("0" + now.getHours()).slice(-2) + ":" + ("0" + now.getMinutes()).slice(-2) + ":" + ("0" + now.getSeconds()).slice(-2);
+      document.getElementById('last-update').innerHTML = "Update terakhir: " + ts;
+    }
+
     window.onload = function() {
       loadData();
-      setInterval(loadData, 30000); 
+      setInterval(() => { if(currentTab === 'live') loadData(); }, 30000); 
     };
   </script>
 </body>
