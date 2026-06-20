@@ -67,7 +67,7 @@ module.exports = async (req, res) => {
       if (userState && userState.state === "WAITING_FOR_JOB_DESC") {
         await fetchGAS({ action: "input_job", nama: namaTeknisi, pekerjaan: text, sto: userState.sto, partner: userState.partner });
         await fetchGAS({ action: "clear_state", chatId });
-        await sendTG(`🚀 Pekerjaan Berhasil Diinput!\n\nStatus tim berubah menjadi *Mengerjakan*.\nJika pekerjaan sudah selesai, silakan klik tombol selesai di bawah ini:`, { inline_keyboard: [[{ text: "✅ Selesai Progress", callback_data: "finish_current" }]] });
+        await sendTG(`🚀 Pekerjaan Berhasil Diinput!\n\nStatus tim berubah menjadi *Progress*.\nJika pekerjaan sudah selesai, silakan klik tombol selesai di bawah ini:`, { inline_keyboard: [[{ text: "✅ Selesai Progress", callback_data: "finish_current" }]] });
       }
     }
 
@@ -83,7 +83,7 @@ module.exports = async (req, res) => {
         const [partnerRaw, sto] = callbackData.replace("partner_", "").split("|");
         const partner = partnerRaw === "none" ? "" : partnerRaw;
         await fetchGAS({ action: "set_state", chatId, state: "WAITING_FOR_JOB_DESC", sto, partner });
-        await sendTG(`Rekan Tim: ${partner || "Kerja Sendiri"}\n\nSilakan ketik detail/uraian pekerjaan yang akan Anda lakukan sekarang:`);
+        await sendTG(`Rekan Tim: ${partner || "Kerja Sendiri"}\n\nSilakan ketik detail beserta tiket / order dan uraian pekerjaan yang akan kamu lakukan sekarang:`);
       }
       else if (callbackData === "finish_current" || callbackData.startsWith("alert_finish_")) {
         const rowIdx = callbackData.startsWith("alert_finish_") ? parseInt(callbackData.replace("alert_finish_", "")) : null;
