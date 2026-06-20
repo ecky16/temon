@@ -122,10 +122,10 @@
       var container = document.getElementById('container-teknisi');
       container.innerHTML = '';
       
-      // AUTO SORTING RAPI: 1. Mengerjakan, 2. Idle (Masuk), 3. Libur
+      // AUTO SORTING RAPI: 1. progress, 2. Idle (Masuk), 3. Libur
       data.sort((a, b) => {
-        let rankA = a.status === 'Mengerjakan' ? 1 : (a.jadwal === 'Libur' ? 3 : 2);
-        let rankB = b.status === 'Mengerjakan' ? 1 : (b.jadwal === 'Libur' ? 3 : 2);
+        let rankA = a.status === 'progress' ? 1 : (a.jadwal === 'Libur' ? 3 : 2);
+        let rankB = b.status === 'progress' ? 1 : (b.jadwal === 'Libur' ? 3 : 2);
         return rankA - rankB;
       });
       
@@ -163,7 +163,7 @@
                 <hr class="text-muted opacity-25 my-2">
                 
                 <div class="mt-auto">
-                  ${item.status === 'Mengerjakan' ? `
+                  ${item.status === 'progress' ? `
                     <div class="job-box">
                       <strong class="d-block text-danger mb-1" style="font-size:0.95rem;">🛠 ${item.detail.pekerjaan}</strong>
                       <div class="d-flex justify-content-between align-items-center mb-1">
