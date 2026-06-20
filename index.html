@@ -238,12 +238,11 @@
         <small class="d-block text-danger fw-bold">${h.jamSelesai || '-'}</small>
       </td>
       <td class="text-center"><span class="badge bg-info text-dark shadow-sm">⏱️ ${h.durasi || '-'}</span></td>
-// Ganti baris badge status ini di dalam fungsi filterHistory
 <td class="text-center">
   <span class="badge ${h.status === 'Selesai' ? 'bg-success' : 'bg-danger'}">
     ${h.status || 'Progress'}
   </span>
-</td>    </tr>
+</td>  </tr>
   `).join('');
 }
 
