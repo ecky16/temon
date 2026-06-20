@@ -30,7 +30,7 @@ module.exports = async (req, res) => {
 
     const namaTeknisi = await fetchGAS({ action: "check_whitelist", chatId });
     if (!namaTeknisi) {
-      await sendTG("Maaf, ID Telegram Anda belum terdaftar di whitelist (db_teknisi).");
+      await sendTG("Maaf, ID Telegram kamu belum terdaftar di whitelist (db_teknisi).");
       return res.status(200).send('OK');
     }
 
@@ -42,12 +42,12 @@ module.exports = async (req, res) => {
         
         if (activeJob) {
           if (activeJob.role === "utama") {
-            const txt = `Anda saat ini berstatus sedang bekerja:\n\n🛠 *${activeJob.pekerjaan}*\n📍 *STO ${activeJob.sto}*\n👥 *Partner:* ${activeJob.partner || '-'}\n\nJika pekerjaan ini sudah selesai, silakan klik tombol di bawah.`;
+            const txt = `kamu saat ini berstatus sedang bekerja:\n\n🛠 *${activeJob.pekerjaan}*\n📍 *STO ${activeJob.sto}*\n👥 *Partner:* ${activeJob.partner || '-'}\n\nJika pekerjaan ini sudah selesai, silakan klik tombol di bawah.`;
             const kb = { inline_keyboard: [[{ text: "✅ Selesai Progress", callback_data: "finish_current" }]] };
             await sendTG(txt, kb);
           } else {
             // Skenario si B di-tag oleh si A
-            const txt = `Anda saat ini telah *didaftarkan oleh ${activeJob.utama}* dalam 1 tim untuk pekerjaan:\n\n🛠 *${activeJob.pekerjaan}*\n📍 *STO ${activeJob.sto}*\n\nAnda tidak perlu melakukan input lagi. Namun, jika Anda saat ini berpisah tim dan akan mengerjakan order lain, silakan klik tombol di bawah ini:`;
+            const txt = `kamu saat ini telah *didaftarkan oleh ${activeJob.utama}* dalam 1 tim untuk pekerjaan:\n\n🛠 *${activeJob.pekerjaan}*\n📍 *STO ${activeJob.sto}*\n\nkamu tidak perlu melakukan input lagi. Namun, jika kamu saat ini berpisah tim dan akan mengerjakan order lain, silakan klik tombol di bawah ini:`;
             const kb = { inline_keyboard: [[{ text: "👋 Keluar dari Tim (Misah)", callback_data: "leave_team" }]] };
             await sendTG(txt, kb);
           }
@@ -57,7 +57,7 @@ module.exports = async (req, res) => {
         // Kalau Idle, tampilkan STO
         const stoList = await fetchGAS({ action: "get_sto_list" });
         const buttons = stoList.map(sto => ([{ text: `📍 ${sto}`, callback_data: `sto_${sto}` }]));
-        await sendTG("Silakan pilih lokasi STO tempat Anda bertugas saat ini:", { inline_keyboard: buttons });
+        await sendTG("Silakan pilih lokasi STO tempat kamu bertugas saat ini:", { inline_keyboard: buttons });
         return res.status(200).send('OK');
       } 
       
@@ -66,7 +66,7 @@ module.exports = async (req, res) => {
       if (userState && userState.state === "WAITING_FOR_JOB_DESC") {
         await fetchGAS({ action: "input_job", nama: namaTeknisi, pekerjaan: text, sto: userState.sto, partner: userState.partner });
         await fetchGAS({ action: "clear_state", chatId });
-        await sendTG(`🚀 Pekerjaan Berhasil Diinput!\n\nStatus tim berubah menjadi *Mengerjakan*.\nJika pekerjaan sudah selesai, silakan klik tombol selesai di bawah ini:`, { inline_keyboard: [[{ text: "✅ Selesai Progress", callback_data: "finish_current" }]] });
+        await sendTG(`🚀 Pekerjaan Berhasil Diinput!\n\nStatus tim berubah menjadi *Progress*.\nJika pekerjaan sudah selesai, silakan klik tombol selesai di bawah ini:`, { inline_keyboard: [[{ text: "✅ Selesai Progress", callback_data: "finish_current" }]] });
       }
     }
 
@@ -83,7 +83,7 @@ module.exports = async (req, res) => {
         const [partnerRaw, sto] = callbackData.replace("partner_", "").split("|");
         const partner = partnerRaw === "none" ? "" : partnerRaw;
         await fetchGAS({ action: "set_state", chatId, state: "WAITING_FOR_JOB_DESC", sto, partner });
-        await sendTG(`Rekan Tim: ${partner || "Kerja Sendiri"}\n\nSilakan ketik detail/uraian pekerjaan yang akan Anda lakukan sekarang:`);
+        await sendTG(`Rekan Tim: ${partner || "Kerja Sendiri"}\n\nSilakan ketik no tiket/ order dan uraian pekerjaan yang akan kamu lakukan sekarang:`);
       }
       // Skenario Si B klik tombol Keluar dari Tim
       else if (callbackData === "leave_team") {
@@ -95,13 +95,13 @@ module.exports = async (req, res) => {
             body: JSON.stringify({ chat_id: chatId, message_id: update.callback_query.message.message_id, reply_markup: { inline_keyboard: [] } })
           });
           
-          await sendTG("✅ *Berhasil Keluar Tim.*\n\nStatus Anda sekarang *Idle*. Silakan ketik /start lagi untuk menginput pekerjaan baru Anda.");
+          await sendTG("✅ *Berhasil Keluar Tim.*\n\nStatus kamu sekarang *Idle*. Silakan ketik /start lagi untuk menginput pekerjaan baru kamu.");
           
           // Kirim notifikasi diam-diam ke si Teknisi Utama (Si A)
           if (result.tgIdUtama) {
             await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
               method: 'POST', headers: {'Content-Type': 'application/json'},
-              body: JSON.stringify({ chat_id: result.tgIdUtama, text: `⚠️ *INFO TIM:*\nRekan tim Anda (*${namaTeknisi}*) telah keluar dari tim karena mengerjakan order lain.\n\nStatus Anda sekarang menjadi *Kerja Sendiri* untuk tiket:\n🛠 ${result.pekerjaan}`, parse_mode: "Markdown" })
+              body: JSON.stringify({ chat_id: result.tgIdUtama, text: `⚠️ *INFO TIM:*\nRekan tim kamu (*${namaTeknisi}*) telah keluar dari tim karena mengerjakan order lain.\n\nStatus kamu sekarang menjadi *Kerja Sendiri* untuk tiket:\n🛠 ${result.pekerjaan}`, parse_mode: "Markdown" })
             });
           }
         } else {
