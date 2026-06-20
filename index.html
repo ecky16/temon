@@ -63,7 +63,7 @@
           </div>
         </div>
         <div class="table-responsive">
-          <table class="table table-hover align-middle">
+          <table class="table table-hover table-sm align-middle shadow-sm">
             <thead class="table-dark">
               <tr>
                 <th>Nama Teknisi</th>
@@ -210,29 +210,38 @@
       }
     }
 
-    function filterHistory() {
-      const selectedDate = document.getElementById('date-filter').value;
-      const tbody = document.getElementById('history-body');
-      
-      if (!selectedDate) return;
+  function filterHistory() {
+  const selectedDate = document.getElementById('date-filter').value;
+  const tbody = document.getElementById('history-body');
+  
+  if (!selectedDate) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Pilih tanggal dulu ya Mas!</td></tr>';
+    return;
+  }
 
-      const filtered = historyData.filter(h => h.tanggal === selectedDate);
-      
-      if (filtered.length === 0) {
-         tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">Kosong. Tidak ada pekerjaan di tanggal ${selectedDate}</td></tr>`;
-         return;
-      }
+  // Filter data berdasarkan tanggal
+  const filtered = historyData.filter(h => h.tanggal === selectedDate);
+  
+  if (filtered.length === 0) {
+     tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">Kosong. Tidak ada pekerjaan di tanggal ${selectedDate}</td></tr>`;
+     return;
+  }
 
-      tbody.innerHTML = filtered.map(h => `
-        <tr>
-          <td class="fw-bold text-dark">${h.nama}</td>
-          <td class="text-primary fw-semibold">${h.pekerjaan}</td>
-          <td><span class="badge bg-secondary">${h.sto}</span></td>
-          <td>${h.partner || '-'}</td>
-          <td><span class="badge ${h.status === 'selesai' ? 'bg-success' : 'bg-danger'}">${h.status.toUpperCase()}</span></td>
-        </tr>
-      `).join('');
-    }
+  // Render tabel dengan class agar rapi
+  tbody.innerHTML = filtered.map(h => `
+    <tr>
+      <td class="fw-bold text-dark text-truncate" style="max-width: 150px;">${h.nama}</td>
+      <td class="text-primary fw-semibold">${h.pekerjaan || '-'}</td>
+      <td class="text-center"><span class="badge bg-secondary">STO ${h.sto || '-'}</span></td>
+      <td class="text-nowrap text-center">
+        <small class="d-block text-success fw-bold">${h.jamMulai || '-'}</small>
+        <small class="d-block text-danger fw-bold">${h.jamSelesai || '-'}</small>
+      </td>
+      <td class="text-center"><span class="badge bg-info text-dark shadow-sm">⏱️ ${h.durasi || '-'}</span></td>
+      <td class="text-center"><span class="badge ${h.status === 'Selesai' ? 'bg-success' : 'bg-warning'}">${h.status || 'Progress'}</span></td>
+    </tr>
+  `).join('');
+}
 
     function updateJam() {
       var now = new Date();
