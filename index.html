@@ -77,7 +77,11 @@
                 </div>
                 
                 <hr class="text-muted opacity-25 my-2">
-                
+                <div class="mb-2">
+  <span class="badge ${item.jadwal === 'Libur' ? 'bg-warning text-dark' : 'bg-primary'}">
+    ${item.jadwal}
+  </span>
+</div>
                 <div class="mt-auto">
                   ${!isIdle ? `
                     <div class="job-box">
