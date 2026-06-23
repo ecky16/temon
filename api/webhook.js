@@ -55,11 +55,18 @@ module.exports = async (req, res) => {
         }
 
         // Kalau Idle, tampilkan STO
-        const stoList = await fetchGAS({ action: "get_sto_list" });
+        // Kalau Idle, tampilkan STO yang sesuai dengan Service Area
+        const stoList = await fetchGAS({ action: "get_sto_list", namaTeknisi: namaTeknisi }); // <-- Tambahan kirim namaTeknisi
+        
+        // Proteksi jika STO kosong atau Service Area tidak ditemukan
+        if (!stoList || stoList.length === 0) {
+           await sendTG("⚠️ Maaf, tidak ada STO yang ditemukan untuk Service Area kamu. Pastikan data di spreadsheet sudah benar.");
+           return res.status(200).send('OK');
+        }
+
         const buttons = stoList.map(sto => ([{ text: `📍 ${sto}`, callback_data: `sto_${sto}` }]));
         await sendTG("Silakan pilih lokasi STO tempat kamu bertugas saat ini:", { inline_keyboard: buttons });
         return res.status(200).send('OK');
-      } 
       
       // Skenario ngetik uraian pekerjaan
       const userState = await fetchGAS({ action: "get_state", chatId });
