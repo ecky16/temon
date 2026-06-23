@@ -36,6 +36,15 @@
       </div>
     </div>
 
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <label class="form-label fw-bold text-muted">📍 Filter Service Area:</label>
+        <select id="sa-filter" class="form-select border-primary fw-bold" onchange="applyGlobalFilter()">
+          <option value="ALL">Semua Area</option>
+        </select>
+      </div>
+    </div>
+
     <ul class="nav nav-tabs mb-4">
       <li class="nav-item">
         <a class="nav-link active" id="tab-live" onclick="switchTab('live')">📡 Live Monitoring</a>
@@ -68,14 +77,14 @@
               <tr>
                 <th>Nama Teknisi</th>
                 <th>Pekerjaan</th>
-                <th>STO & Tim</th>
-                <th>Waktu (Mulai - Selesai)</th>
-                <th>Durasi</th>
-                <th>Status</th>
+                <th class="text-center">STO & Tim</th>
+                <th class="text-center">Waktu (Mulai - Selesai)</th>
+                <th class="text-center">Durasi</th>
+                <th class="text-center">Status</th>
               </tr>
             </thead>
             <tbody id="history-body">
-              <tr><td colspan="5" class="text-center text-muted py-4">Memuat data history...</td></tr>
+              <tr><td colspan="6" class="text-center text-muted py-4">Memuat data history...</td></tr>
             </tbody>
           </table>
         </div>
@@ -86,6 +95,7 @@
   <script>
     let currentTab = 'live';
     let historyData = [];
+    let dashboardDataFull = []; // Menyimpan data utuh live agar mudah difilter
 
     function switchTab(tab) {
       currentTab = tab;
@@ -97,12 +107,44 @@
       
       if(tab === 'history' && historyData.length === 0) {
         loadHistory();
+      } else {
+        applyGlobalFilter(); // Terapkan filter saat pindah tab
       }
     }
 
     function refreshCurrentTab() {
       if(currentTab === 'live') loadData();
       else loadHistory();
+    }
+
+    // Fungsi untuk mengisi opsi dropdown Service Area
+    function populateSADropdown(data) {
+       const select = document.getElementById('sa-filter');
+       const currentVal = select.value;
+       
+       // Ambil nilai SA yang unik dan tidak kosong
+       const uniqueSA = [...new Set(data.map(item => item.sa))].filter(sa => sa && sa !== "-");
+       
+       let optionsHtml = '<option value="ALL">Semua Area</option>';
+       uniqueSA.forEach(sa => {
+          optionsHtml += `<option value="${sa}">${sa}</option>`;
+       });
+       
+       select.innerHTML = optionsHtml;
+       // Tahan pilihan user sebelumnya jika data baru di-refresh
+       if(uniqueSA.includes(currentVal)) select.value = currentVal;
+    }
+
+    // Fungsi memfilter kedua tab berdasarkan Service Area
+    function applyGlobalFilter() {
+       const selectedSA = document.getElementById('sa-filter').value;
+       
+       if(currentTab === 'live') {
+          const filtered = selectedSA === 'ALL' ? dashboardDataFull : dashboardDataFull.filter(d => d.sa === selectedSA);
+          renderCards(filtered);
+       } else {
+          filterHistory(); 
+       }
     }
 
     // ================= LIVE TAB =================
@@ -112,14 +154,16 @@
       
       try {
         const response = await fetch('/api/dashboard');
-        const data = await response.json();
-        renderCards(data);
+        dashboardDataFull = await response.json();
+        
+        populateSADropdown(dashboardDataFull);
+        applyGlobalFilter();
       } catch (error) {
         document.getElementById('last-update').innerHTML = "Gagal memuat data!";
       }
     }
 
-   function renderCards(data) {
+    function renderCards(data) {
       var container = document.getElementById('container-teknisi');
       container.innerHTML = '';
       
@@ -128,7 +172,7 @@
         let rankB = b.status === 'Progress' ? 1 : (b.jadwal === 'Libur' ? 3 : 2);
         return rankA - rankB;
       });
-      
+
       data.forEach(function(item) {
         var isIdle = item.status === "Idle";
         var isLibur = item.jadwal === "Libur";
@@ -151,7 +195,7 @@
                 <div class="d-flex justify-content-between align-items-start mb-2">
                   <div>
                     <h5 class="card-title fw-bold mb-0 text-dark">${item.nama}</h5>
-                    <small class="text-muted">NIK: ${item.nik}</small>
+                    <small class="text-muted">NIK: ${item.nik} | SA: <b>${item.sa || '-'}</b></small>
                     <div class="mt-1"><span class="badge ${isLibur ? 'bg-warning text-dark' : 'bg-primary'}">${item.jadwal}</span></div>
                   </div>
                   <span class="status-badge ${badgeClass}">${textStatus}</span>
@@ -204,52 +248,57 @@
         
         filterHistory();
       } catch (error) {
-        document.getElementById('history-body').innerHTML = '<tr><td colspan="5" class="text-center text-danger">Gagal memuat history.</td></tr>';
+        document.getElementById('history-body').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Gagal memuat history.</td></tr>';
       } finally {
         document.getElementById('loader').classList.add('d-none');
       }
     }
 
-function filterHistory() {
-    const selectedDate = document.getElementById('date-filter').value;
-    const tbody = document.getElementById('history-body');
-    
-    if (!selectedDate) {
-      tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Pilih tanggal dulu ya Mas!</td></tr>';
-      return;
+    function filterHistory() {
+      const selectedDate = document.getElementById('date-filter').value;
+      const selectedSA = document.getElementById('sa-filter').value;
+      const tbody = document.getElementById('history-body');
+      
+      if (!selectedDate) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Pilih tanggal dulu ya Mas!</td></tr>';
+        return;
+      }
+
+      // Filter berdasarkan tanggal DAN Service Area
+      let filtered = historyData.filter(h => h.tanggal === selectedDate);
+      if (selectedSA !== 'ALL') {
+         filtered = filtered.filter(h => h.sa === selectedSA);
+      }
+      
+      if (filtered.length === 0) {
+         tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">Kosong. Tidak ada data di filter ini.</td></tr>`;
+         return;
+      }
+
+      // Render tabel yang sudah difilter dan tampilkan Partner
+      tbody.innerHTML = filtered.map(h => `
+        <tr>
+          <td class="fw-bold text-dark text-truncate" style="max-width: 150px;">${h.nama}</td>
+          <td class="text-primary fw-semibold">${h.pekerjaan || '-'}</td>
+          <td class="text-center">
+            <span class="badge bg-secondary mb-1">STO ${h.sto || '-'}</span>
+            <br>
+            <small class="text-muted fw-bold" style="font-size: 0.75rem;">👥 ${h.partner ? h.partner : 'Sendiri'}</small>
+          </td>
+          <td class="text-nowrap text-center">
+            <small class="d-block text-success fw-bold">${h.jamMulai || '-'}</small>
+            <small class="d-block text-danger fw-bold">${h.jamSelesai || '-'}</small>
+          </td>
+          <td class="text-center"><span class="badge bg-info text-dark shadow-sm">⏱️ ${h.durasi || '-'}</span></td>
+          <td class="text-center">
+            <span class="badge ${h.status.toLowerCase() === 'selesai' ? 'bg-success' : 'bg-danger'}">
+              ${h.status || 'Progress'}
+            </span>
+          </td>
+        </tr>
+      `).join('');
     }
 
-    // Filter data berdasarkan tanggal
-    const filtered = historyData.filter(h => h.tanggal === selectedDate);
-    
-    if (filtered.length === 0) {
-       tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">Kosong. Tidak ada pekerjaan di tanggal ${selectedDate}</td></tr>`;
-       return;
-    }
-
-    // Render tabel dengan class agar rapi (ditambah kolom Partner)
-    tbody.innerHTML = filtered.map(h => `
-      <tr>
-        <td class="fw-bold text-dark text-truncate" style="max-width: 150px;">${h.nama}</td>
-        <td class="text-primary fw-semibold">${h.pekerjaan || '-'}</td>
-        <td class="text-center">
-          <span class="badge bg-secondary mb-1">STO ${h.sto || '-'}</span>
-          <br>
-          <small class="text-muted fw-bold" style="font-size: 0.75rem;">👥 ${h.partner ? h.partner : 'Sendiri'}</small>
-        </td>
-        <td class="text-nowrap text-center">
-          <small class="d-block text-success fw-bold">${h.jamMulai || '-'}</small>
-          <small class="d-block text-danger fw-bold">${h.jamSelesai || '-'}</small>
-        </td>
-        <td class="text-center"><span class="badge bg-info text-dark shadow-sm">⏱️ ${h.durasi || '-'}</span></td>
-        <td class="text-center">
-          <span class="badge ${h.status.toLowerCase() === 'selesai' ? 'bg-success' : 'bg-danger'}">
-            ${h.status || 'Progress'}
-          </span>
-        </td>
-      </tr>
-    `).join('');
-}
     function updateJam() {
       var now = new Date();
       var ts = ("0" + now.getHours()).slice(-2) + ":" + ("0" + now.getMinutes()).slice(-2) + ":" + ("0" + now.getSeconds()).slice(-2);
