@@ -39,34 +39,33 @@ module.exports = async (req, res) => {
       if (text === "/start") {
         // Cek apakah dia sedang terikat pekerjaan aktif sebelum nembak daftar STO
         const activeJob = await fetchGAS({ action: "get_active_job", namaTeknisi });
-        
         if (activeJob) {
           if (activeJob.role === "utama") {
-            const txt = `kamu saat ini berstatus sedang bekerja:\n\n🛠 *${activeJob.pekerjaan}*\n📍 *STO ${activeJob.sto}*\n👥 *Partner:* ${activeJob.partner || '-'}\n\nJika pekerjaan ini sudah selesai, silakan klik tombol di bawah.`;
+            const txt = `Kamu saat ini berstatus sedang bekerja:\n\n🛠 *${activeJob.pekerjaan}*\n📍 *STO ${activeJob.sto}*\n👥 *Partner:* ${activeJob.partner || '-'}\n\nJika pekerjaan ini sudah selesai, silakan klik tombol di bawah.`;
             const kb = { inline_keyboard: [[{ text: "✅ Selesai Progress", callback_data: "finish_current" }]] };
             await sendTG(txt, kb);
           } else {
             // Skenario si B di-tag oleh si A
-            const txt = `kamu saat ini telah *didaftarkan oleh ${activeJob.utama}* dalam 1 tim untuk pekerjaan:\n\n🛠 *${activeJob.pekerjaan}*\n📍 *STO ${activeJob.sto}*\n\nkamu tidak perlu melakukan input lagi. Namun, jika kamu saat ini berpisah tim dan akan mengerjakan order lain, silakan klik tombol di bawah ini:`;
+            const txt = `Kamu saat ini telah *didaftarkan oleh ${activeJob.utama}* dalam 1 tim untuk pekerjaan:\n\n🛠 *${activeJob.pekerjaan}*\n📍 *STO ${activeJob.sto}*\n\nKamu tidak perlu melakukan input lagi.\nNamun, jika kamu saat ini berpisah tim dan akan mengerjakan order lain, silakan klik tombol di bawah ini:`;
             const kb = { inline_keyboard: [[{ text: "👋 Keluar dari Tim (Misah)", callback_data: "leave_team" }]] };
             await sendTG(txt, kb);
           }
           return res.status(200).send('OK'); // Hentikan agar tidak muncul list STO
         }
 
-        // Kalau Idle, tampilkan STO
-        // Kalau Idle, tampilkan STO yang sesuai dengan Service Area
-        const stoList = await fetchGAS({ action: "get_sto_list", namaTeknisi: namaTeknisi }); // <-- Tambahan kirim namaTeknisi
+        // BAGIAN YANG DIUBAH: Mengirimkan namaTeknisi agar GAS bisa mencari Service Areanya
+        const stoList = await fetchGAS({ action: "get_sto_list", namaTeknisi: namaTeknisi });
         
-        // Proteksi jika STO kosong atau Service Area tidak ditemukan
+        // Proteksi tambahan jika list STO kosong atau Service Area salah
         if (!stoList || stoList.length === 0) {
-           await sendTG("⚠️ Maaf, tidak ada STO yang ditemukan untuk Service Area kamu. Pastikan data di spreadsheet sudah benar.");
+           await sendTG("⚠️ Maaf, tidak ada STO yang ditemukan untuk Service Area kamu. Pastikan Service Area kamu sudah terisi dengan benar di spreadsheet.");
            return res.status(200).send('OK');
         }
 
         const buttons = stoList.map(sto => ([{ text: `📍 ${sto}`, callback_data: `sto_${sto}` }]));
         await sendTG("Silakan pilih lokasi STO tempat kamu bertugas saat ini:", { inline_keyboard: buttons });
         return res.status(200).send('OK');
+      } 
       
       // Skenario ngetik uraian pekerjaan
       const userState = await fetchGAS({ action: "get_state", chatId });
@@ -101,9 +100,7 @@ module.exports = async (req, res) => {
             method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ chat_id: chatId, message_id: update.callback_query.message.message_id, reply_markup: { inline_keyboard: [] } })
           });
-          
           await sendTG("✅ *Berhasil Keluar Tim.*\n\nStatus kamu sekarang *Idle*. Silakan ketik /start lagi untuk menginput pekerjaan baru kamu.");
-          
           // Kirim notifikasi diam-diam ke si Teknisi Utama (Si A)
           if (result.tgIdUtama) {
             await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
@@ -116,7 +113,8 @@ module.exports = async (req, res) => {
         }
       }
       else if (callbackData === "finish_current" || callbackData.startsWith("alert_finish_")) {
-        const rowIdx = callbackData.startsWith("alert_finish_") ? parseInt(callbackData.replace("alert_finish_", "")) : null;
+        const rowIdx = callbackData.startsWith("alert_finish_") ?
+        parseInt(callbackData.replace("alert_finish_", "")) : null;
         const isSuccess = await fetchGAS({ action: "finish_job", namaTeknisi, rowIdx });
         if (isSuccess) {
           await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/editMessageReplyMarkup`, {
