@@ -62,7 +62,13 @@ module.exports = async (req, res) => {
            return res.status(200).send('OK');
         }
 
-        const buttons = stoList.map(sto => ([{ text: `📍 ${sto}`, callback_data: `sto_${sto}` }]));
+        // Buat daftar STO menjadi 3 kolom ke samping
+        const stoButtonsFlat = stoList.map(sto => ({ text: `📍 ${sto}`, callback_data: `sto_${sto}` }));
+        const buttons = [];
+        for (let i = 0; i < stoButtonsFlat.length; i += 3) {
+            buttons.push(stoButtonsFlat.slice(i, i + 3));
+        }
+        
         await sendTG("Silakan pilih lokasi STO tempat kamu bertugas saat ini:", { inline_keyboard: buttons });
         return res.status(200).send('OK');
       } 
@@ -81,8 +87,17 @@ module.exports = async (req, res) => {
       if (callbackData.startsWith("sto_")) {
         const selectedSto = callbackData.replace("sto_", "");
         const idleTechs = await fetchGAS({ action: "get_idle_techs", namaTeknisi });
-        const buttons = idleTechs.map(name => ([{ text: `👦 ${name}`, callback_data: `partner_${name}|${selectedSto}` }]));
+        
+        // Buat daftar partner menjadi 2 kolom ke samping (karena nama orang biasanya lebih panjang)
+        const partnerButtonsFlat = idleTechs.map(name => ({ text: `👦 ${name}`, callback_data: `partner_${name}|${selectedSto}` }));
+        const buttons = [];
+        for (let i = 0; i < partnerButtonsFlat.length; i += 2) {
+          buttons.push(partnerButtonsFlat.slice(i, i + 2));
+        }
+        
+        // Tambahkan tombol "Kerja Sendiri" di baris paling bawah sendirian
         buttons.push([{ text: "🏃 Kerja Sendiri", callback_data: `partner_none|${selectedSto}` }]);
+        
         await sendTG(`STO Terpilih: ${selectedSto}\n\nPilih rekan tim kamu:`, { inline_keyboard: buttons });
       }
       else if (callbackData.startsWith("partner_")) {
