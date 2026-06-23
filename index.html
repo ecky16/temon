@@ -232,7 +232,11 @@ function filterHistory() {
       <tr>
         <td class="fw-bold text-dark text-truncate" style="max-width: 150px;">${h.nama}</td>
         <td class="text-primary fw-semibold">${h.pekerjaan || '-'}</td>
-        <td class="text-center"><span class="badge bg-secondary">STO ${h.sto || '-'}</span></td>
+        <td class="text-center">
+          <span class="badge bg-secondary mb-1">STO ${h.sto || '-'}</span>
+          <br>
+          <small class="text-muted fw-bold" style="font-size: 0.75rem;">👥 ${h.partner ? h.partner : 'Sendiri'}</small>
+        </td>
         <td class="text-nowrap text-center">
           <small class="d-block text-success fw-bold">${h.jamMulai || '-'}</small>
           <small class="d-block text-danger fw-bold">${h.jamSelesai || '-'}</small>
@@ -245,7 +249,7 @@ function filterHistory() {
         </td>
       </tr>
     `).join('');
-  }
+}
     function updateJam() {
       var now = new Date();
       var ts = ("0" + now.getHours()).slice(-2) + ":" + ("0" + now.getMinutes()).slice(-2) + ":" + ("0" + now.getSeconds()).slice(-2);
