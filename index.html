@@ -264,7 +264,7 @@
       const tbody = document.getElementById('history-body');
       
       if (!selectedDate) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Pilih tanggal dulu ya Mas!</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted small py-2">Pilih tanggal dulu ya Mas!</td></tr>';
         return;
       }
 
@@ -275,27 +275,28 @@
       }
       
       if (filtered.length === 0) {
-         tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">Kosong. Tidak ada data di filter ini.</td></tr>`;
+         tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted small py-3">Kosong. Tidak ada data di filter ini.</td></tr>`;
          return;
       }
 
-      // Render tabel yang sudah difilter dan tampilkan Partner
+      // Render tabel dengan font lebih kecil (small), padding rapat (py-1 px-2), dan nama teknisi utuh (tanpa truncate)
       tbody.innerHTML = filtered.map(h => `
-        <tr>
-          <td class="fw-bold text-dark text-truncate" style="max-width: 150px;">${h.nama}</td>
-          <td class="text-primary fw-semibold">${h.pekerjaan || '-'}</td>
-          <td class="text-center">
-            <span class="badge bg-secondary mb-1">STO ${h.sto || '-'}</span>
-            <br>
-            <small class="text-muted fw-bold" style="font-size: 0.75rem;">👥 ${h.partner ? h.partner : 'Sendiri'}</small>
+        <tr style="font-size: 0.75rem;">
+          <td class="fw-bold text-dark py-1 px-2">${h.nama}</td>
+          <td class="text-primary fw-semibold py-1 px-2">${h.pekerjaan || '-'}</td>
+          <td class="text-center py-1 px-2">
+            <span class="badge bg-secondary" style="font-size: 0.6rem; padding: 2px 6px;">STO ${h.sto || '-'}</span>
+            <div class="text-muted fw-bold mt-1" style="font-size: 0.65rem;">👥 ${h.partner ? h.partner : 'Sendiri'}</div>
           </td>
-          <td class="text-nowrap text-center">
-            <small class="d-block text-success fw-bold">${h.jamMulai || '-'}</small>
-            <small class="d-block text-danger fw-bold">${h.jamSelesai || '-'}</small>
+          <td class="text-nowrap text-center py-1 px-2">
+            <small class="d-block text-success fw-bold" style="font-size: 0.7rem;">${h.jamMulai || '-'}</small>
+            <small class="d-block text-danger fw-bold" style="font-size: 0.7rem;">${h.jamSelesai || '-'}</small>
           </td>
-          <td class="text-center"><span class="badge bg-info text-dark shadow-sm">⏱️ ${h.durasi || '-'}</span></td>
-          <td class="text-center">
-            <span class="badge ${h.status.toLowerCase() === 'selesai' ? 'bg-success' : 'bg-danger'}">
+          <td class="text-center py-1 px-2">
+            <span class="badge bg-info text-dark shadow-sm" style="font-size: 0.65rem; padding: 2px 6px;">⏱️ ${h.durasi || '-'}</span>
+          </td>
+          <td class="text-center py-1 px-2">
+            <span class="badge ${h.status.toLowerCase() === 'selesai' ? 'bg-success' : 'bg-danger'}" style="font-size: 0.65rem; padding: 3px 8px;">
               ${h.status || 'Progress'}
             </span>
           </td>
