@@ -188,38 +188,42 @@
         }
         
         var cardHtml = `
-          <div class="col-md-4 col-lg-3">
-            <div class="card card-tech">
-              <div class="indicator-line" style="background-color: ${indicatorColor};"></div>
-              <div class="card-body d-flex flex-column">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                  <div>
-                    <h5 class="card-title fw-bold mb-0 text-dark">${item.nama}</h5>
-                    <small class="text-muted">NIK: ${item.nik} | SA: <b>${item.sa || '-'}</b></small>
-                    <div class="mt-1"><span class="badge ${isLibur ? 'bg-warning text-dark' : 'bg-primary'}">${item.jadwal}</span></div>
+          <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+            <div class="card card-tech h-100">
+              <div class="indicator-line" style="background-color: ${indicatorColor}; height: 4px;"></div>
+              <div class="card-body d-flex flex-column p-2">
+                
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                  <div class="text-truncate pe-1">
+                    <div class="fw-bold text-dark text-truncate" style="font-size: 0.9rem;">${item.nama}</div>
+                    <div class="text-muted text-truncate" style="font-size: 0.65rem;">NIK: ${item.nik} | SA: <b>${item.sa || '-'}</b></div>
                   </div>
                   <span class="status-badge ${badgeClass}">${textStatus}</span>
                 </div>
-                <hr class="text-muted opacity-25 my-2">
+                
+                <div class="mb-2">
+                  <span class="badge ${isLibur ? 'bg-warning text-dark' : 'bg-primary'}" style="font-size: 0.6rem;">${item.jadwal}</span>
+                </div>
+
                 <div class="mt-auto">
                   ${item.status === 'Progress' ? `
                     <div class="job-box">
-                      <strong class="d-block text-danger mb-1" style="font-size:0.95rem;">🛠 ${item.detail.pekerjaan}</strong>
+                      <div class="text-danger fw-bold text-truncate mb-1" style="font-size:0.75rem;" title="${item.detail.pekerjaan}">🛠 ${item.detail.pekerjaan}</div>
                       <div class="d-flex justify-content-between align-items-center mb-1">
-                        <small class="text-dark fw-semibold">📍 STO ${item.detail.sto}</small>
-                        <span class="badge bg-secondary opacity-75">🕒 ${item.detail.mulai}</span>
+                        <span class="text-dark fw-semibold" style="font-size: 0.7rem;">📍 STO ${item.detail.sto}</span>
+                        <span class="badge bg-secondary opacity-75" style="font-size: 0.6rem;">🕒 ${item.detail.mulai}</span>
                       </div>
                       <div class="mb-1 bg-white p-1 rounded border border-danger text-center">
-                        <small class="text-danger fw-bold">⏳ Sedang berjalan: ${item.detail.durasi}</small>
+                        <div class="text-danger fw-bold" style="font-size: 0.7rem;">⏳ ${item.detail.durasi}</div>
                       </div>
-                      <small class="text-muted d-block mt-2 border-top pt-1">
+                      <div class="text-muted border-top pt-1 text-truncate" style="font-size: 0.65rem;">
                         👥 <b>Tim:</b> ${item.detail.utama} ${item.detail.partner && item.detail.partner !== '-' ? `& ${item.detail.partner}` : '(Sendiri)'}
-                      </small>
+                      </div>
                     </div>
                   ` : `
                     <div class="idle-box text-center text-muted">
-                      <span style="font-size: 1.5rem;">${isLibur ? '🏖️' : '☕'}</span><br>
-                      <small>${isLibur ? 'Sedang libur tugas' : 'Siap menerima order baru'}</small>
+                      <span style="font-size: 1.2rem;">${isLibur ? '🏖️' : '☕'}</span><br>
+                      <span style="font-size: 0.7rem;">${isLibur ? 'Libur tugas' : 'Siap order'}</span>
                     </div>
                   `}
                 </div>
