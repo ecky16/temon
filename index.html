@@ -2,44 +2,94 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Dashboard TeMon</title>
+  <title>Dashboard TeMon Pro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    .header-bar { background-color: #1a365d; color: white; padding: 15px 20px; border-radius: 8px; margin-top: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    .card-tech { border: none; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); transition: transform 0.2s; height: 100%; }
-    .card-tech:hover { transform: translateY(-5px); }
-    .status-badge { font-weight: 600; padding: 6px 15px; border-radius: 20px; font-size: 0.85rem; letter-spacing: 0.5px; }
+    /* Import Font Poppins */
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
     
+    body { 
+      background-color: #f0f2f5; 
+      font-family: 'Poppins', sans-serif; 
+      color: #2d3748;
+    }
+    
+    /* Header Gradasi Elegan */
+    .header-bar { 
+      background: linear-gradient(135deg, #e53935 0%, #1a365d 100%); 
+      color: white; 
+      padding: 18px 24px; 
+      border-radius: 16px; 
+      margin-top: 20px; 
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1); 
+    }
+    
+    /* Soft UI Cards */
+    .card-tech, .card-produk { 
+      border: 1px solid rgba(0,0,0,0.04); 
+      border-radius: 16px; 
+      box-shadow: 0 6px 16px rgba(0,0,0,0.04); 
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
+      height: 100%; 
+      background: #ffffff;
+    }
+    .card-tech:hover { 
+      transform: translateY(-5px); 
+      box-shadow: 0 14px 28px rgba(0,0,0,0.1); 
+    }
+    
+    /* Indikator Atas Kartu */
+    .indicator-line { height: 6px; border-radius: 16px 16px 0 0; }
+    
+    /* Animasi Pulse untuk yang Sedang Bekerja */
+    @keyframes pulse-red {
+      0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
+      70% { box-shadow: 0 0 0 8px rgba(220, 53, 69, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+    }
+    .pulse-working { animation: pulse-red 2s infinite; }
+
+    /* Badge & Box Styling */
+    .status-badge { font-weight: 600; padding: 6px 16px; border-radius: 30px; font-size: 0.8rem; letter-spacing: 0.5px; }
     .bg-idle { background-color: #d1e7dd; color: #0f5132; }
     .bg-working { background-color: #f8d7da; color: #842029; }
     .bg-libur { background-color: #fff3cd; color: #856404; }
+    .bg-piket-jadwal { background-color: #f3e8ff !important; color: #6b21a8 !important; }
     
-    .indicator-line { height: 6px; border-radius: 10px 10px 0 0; }
-    .job-box { background-color: #fff5f5; border: 1px solid #fed7d7; padding: 10px; border-radius: 6px; }
-    .idle-box { background-color: #f8fafc; border: 1px dashed #cbd5e0; padding: 15px; border-radius: 6px; }
+    .job-box { background-color: #fffafb; border: 1px solid #ffe5e5; padding: 12px; border-radius: 12px; }
+    .idle-box { background-color: #f8fafc; border: 1px dashed #cbd5e0; padding: 15px; border-radius: 12px; }
     
-    .nav-tabs .nav-link { font-weight: bold; color: #1a365d; cursor: pointer; border: none; }
-    .nav-tabs .nav-link.active { color: #dc3545; border-bottom: 3px solid #dc3545; background-color: transparent; }
+    /* Nav Tabs Kekinian */
+    .nav-tabs { border-bottom: 2px solid #e2e8f0; }
+    .nav-tabs .nav-link { font-weight: 600; color: #718096; cursor: pointer; border: none; padding: 12px 20px; transition: all 0.2s;}
+    .nav-tabs .nav-link:hover { color: #1a365d; }
+    .nav-tabs .nav-link.active { color: #e53935; border-bottom: 3px solid #e53935; background-color: transparent; }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #a0aec0; }
   </style>
 </head>
 <body>
   <div class="container mb-5">
     <div class="header-bar d-flex justify-content-between align-items-center mb-4">
       <div>
-        <h3 class="m-0 fw-bold">🚀 Dashboard TeMon (Teknisi Monitoring)</h3>
+        <h3 class="m-0 fw-bold">🚀 Dashboard TeMon</h3>
         <small class="text-light opacity-75">Sistem Monitoring Teknisi Terintegrasi Real-Time</small>
       </div>
-      <div class="text-end">
-        <div id="last-update" class="text-warning small mb-1">Memuat data...</div>
-        <button onclick="refreshCurrentTab()" class="btn btn-light btn-sm fw-bold text-primary shadow-sm">🔄 Refresh</button>
+      <div class="text-end d-none d-md-block">
+        <div id="last-update" class="text-warning small mb-1 fw-medium">Memuat data...</div>
+        <button onclick="refreshCurrentTab()" class="btn btn-light btn-sm fw-bold text-primary shadow-sm rounded-pill px-3">🔄 Refresh</button>
       </div>
     </div>
 
     <div class="row mb-3">
       <div class="col-md-4">
         <label class="form-label fw-bold text-muted">📍 Filter Service Area:</label>
-        <select id="sa-filter" class="form-select border-primary fw-bold" onchange="applyGlobalFilter()">
+        <select id="sa-filter" class="form-select border-danger fw-bold shadow-sm" style="border-radius: 10px;" onchange="applyGlobalFilter()">
           <option value="ALL">Semua Area</option>
         </select>
       </div>
@@ -52,11 +102,14 @@
       <li class="nav-item">
         <a class="nav-link" id="tab-history" onclick="switchTab('history')">📅 History Pekerjaan</a>
       </li>
+      <li class="nav-item">
+        <a class="nav-link" id="tab-produk" onclick="switchTab('produk')">📈 Produktivitas</a>
+      </li>
     </ul>
 
     <div id="loader" class="text-center my-5">
-      <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
-      <h5 class="mt-3 text-muted" id="loader-text">Sinkronisasi Data...</h5>
+      <div class="spinner-border text-danger" role="status" style="width: 3rem; height: 3rem;"></div>
+      <h5 class="mt-3 fw-semibold text-muted" id="loader-text">Sinkronisasi Data...</h5>
     </div>
 
     <div id="content-live" class="d-none">
@@ -64,65 +117,77 @@
     </div>
 
     <div id="content-history" class="d-none">
-      <div class="card p-4 border-0 shadow-sm rounded-3">
+      <div class="card p-4 border-0 shadow-sm" style="border-radius: 16px;">
         <div class="row mb-3 align-items-end">
           <div class="col-md-4">
             <label class="form-label fw-bold text-muted">Filter Tanggal:</label>
-            <input type="date" id="date-filter" class="form-control border-primary" onchange="filterHistory()">
+            <input type="date" id="date-filter" class="form-control border-danger fw-medium shadow-sm" style="border-radius: 10px;" onchange="filterHistory()">
           </div>
         </div>
         <div class="table-responsive">
-          <table class="table table-hover table-sm align-middle shadow-sm">
-            <thead class="table-dark">
+          <table class="table table-hover table-sm align-middle">
+            <thead class="table-dark" style="border-radius: 10px 10px 0 0; overflow: hidden;">
               <tr>
-                <th>Nama Teknisi</th>
-                <th>Pekerjaan</th>
-                <th class="text-center">STO & Tim</th>
-                <th class="text-center">Waktu (Mulai - Selesai)</th>
-                <th class="text-center">Durasi</th>
-                <th class="text-center">Status</th>
+                <th class="py-2">Nama Teknisi</th>
+                <th class="py-2">Pekerjaan</th>
+                <th class="text-center py-2">STO & Tim</th>
+                <th class="text-center py-2">Waktu (Mulai - Selesai)</th>
+                <th class="text-center py-2">Durasi</th>
+                <th class="text-center py-2">Status</th>
               </tr>
             </thead>
             <tbody id="history-body">
-              <tr><td colspan="6" class="text-center text-muted py-4">Memuat data history...</td></tr>
+              <tr><td colspan="6" class="text-center text-muted py-4 fw-medium">Memuat data history...</td></tr>
             </tbody>
           </table>
         </div>
       </div>
     </div>
+
+    <div id="content-produk" class="d-none">
+      <div class="row mb-3">
+         <div class="col-md-4">
+            <label class="form-label fw-bold text-muted">Analisis Tanggal:</label>
+            <input type="date" id="date-produk" class="form-control border-primary fw-medium shadow-sm" style="border-radius: 10px;" onchange="renderProduktivitas()">
+         </div>
+      </div>
+      <div class="row g-4" id="container-produk">
+        </div>
+    </div>
+
   </div>
 
   <script>
     let currentTab = 'live';
     let historyData = [];
-    let dashboardDataFull = []; // Menyimpan data utuh live agar mudah difilter
+    let dashboardDataFull = [];
 
+    // Fungsi Pindah Tab
     function switchTab(tab) {
       currentTab = tab;
       document.getElementById('tab-live').classList.toggle('active', tab === 'live');
       document.getElementById('tab-history').classList.toggle('active', tab === 'history');
+      document.getElementById('tab-produk').classList.toggle('active', tab === 'produk');
       
       document.getElementById('content-live').classList.toggle('d-none', tab !== 'live');
       document.getElementById('content-history').classList.toggle('d-none', tab !== 'history');
+      document.getElementById('content-produk').classList.toggle('d-none', tab !== 'produk');
       
-      if(tab === 'history' && historyData.length === 0) {
-        loadHistory();
+      if(tab === 'live') {
+         if(dashboardDataFull.length === 0) loadData(); else applyGlobalFilter();
       } else {
-        applyGlobalFilter(); // Terapkan filter saat pindah tab
+         if(historyData.length === 0) loadHistoryAndProduk(); else applyGlobalFilter();
       }
     }
 
     function refreshCurrentTab() {
       if(currentTab === 'live') loadData();
-      else loadHistory();
+      else loadHistoryAndProduk();
     }
 
-    // Fungsi untuk mengisi opsi dropdown Service Area
     function populateSADropdown(data) {
        const select = document.getElementById('sa-filter');
        const currentVal = select.value;
-       
-       // Ambil nilai SA yang unik dan tidak kosong
        const uniqueSA = [...new Set(data.map(item => item.sa))].filter(sa => sa && sa !== "-");
        
        let optionsHtml = '<option value="ALL">Semua Area</option>';
@@ -131,23 +196,22 @@
        });
        
        select.innerHTML = optionsHtml;
-       // Tahan pilihan user sebelumnya jika data baru di-refresh
        if(uniqueSA.includes(currentVal)) select.value = currentVal;
     }
 
-    // Fungsi memfilter kedua tab berdasarkan Service Area
     function applyGlobalFilter() {
-       const selectedSA = document.getElementById('sa-filter').value;
-       
        if(currentTab === 'live') {
+          const selectedSA = document.getElementById('sa-filter').value;
           const filtered = selectedSA === 'ALL' ? dashboardDataFull : dashboardDataFull.filter(d => d.sa === selectedSA);
           renderCards(filtered);
-       } else {
+       } else if (currentTab === 'history') {
           filterHistory(); 
+       } else if (currentTab === 'produk') {
+          renderProduktivitas();
        }
     }
 
-    // ================= LIVE TAB =================
+    // LOAD DATA TAB LIVE
     async function loadData() {
       document.getElementById('loader').classList.remove('d-none');
       document.getElementById('content-live').classList.add('d-none');
@@ -155,7 +219,6 @@
       try {
         const response = await fetch('/api/dashboard');
         dashboardDataFull = await response.json();
-        
         populateSADropdown(dashboardDataFull);
         applyGlobalFilter();
       } catch (error) {
@@ -163,6 +226,7 @@
       }
     }
 
+    // RENDER KARTU TAB LIVE
     function renderCards(data) {
       var container = document.getElementById('container-teknisi');
       container.innerHTML = '';
@@ -176,15 +240,23 @@
       data.forEach(function(item) {
         var isIdle = item.status === "Idle";
         var isLibur = item.jadwal === "Libur";
+        var isPiket = item.jadwal === "Piket"; 
         
-        var badgeClass = isIdle ? "bg-idle" : "bg-working";
+        var badgeClass = isIdle ? "bg-idle" : "bg-working pulse-working"; 
         var indicatorColor = isIdle ? "#198754" : "#dc3545";
         var textStatus = item.status.toUpperCase();
 
         if(isLibur && isIdle) {
             badgeClass = "bg-libur";
-            indicatorColor = "#ffc107";
+            indicatorColor = "#f59e0b";
             textStatus = "LIBUR";
+        }
+        
+        var jadwalBadgeClass = "bg-primary";
+        if (isLibur) {
+          jadwalBadgeClass = "bg-warning text-dark";
+        } else if (isPiket) {
+          jadwalBadgeClass = "bg-piket-jadwal";
         }
         
         var cardHtml = `
@@ -194,32 +266,34 @@
               <div class="card-body d-flex flex-column">
                 <div class="d-flex justify-content-between align-items-start mb-2">
                   <div>
-                    <h5 class="card-title fw-bold mb-0 text-dark">${item.nama}</h5>
-                    <small class="text-muted">NIK: ${item.nik} | SA: <b>${item.sa || '-'}</b></small>
-                    <div class="mt-1"><span class="badge ${isLibur ? 'bg-warning text-dark' : 'bg-primary'}">${item.jadwal}</span></div>
+                    <h6 class="card-title fw-bold mb-0 text-dark">${item.nama}</h6>
+                    <small class="text-muted" style="font-size:0.75rem;">NIK: ${item.nik} | SA: <b>${item.sa || '-'}</b></small>
+                    <div class="mt-1">
+                      <span class="badge ${jadwalBadgeClass}">${isPiket ? '⏱️ Piket (Shift 2)' : item.jadwal}</span>
+                    </div>
                   </div>
                   <span class="status-badge ${badgeClass}">${textStatus}</span>
                 </div>
-                <hr class="text-muted opacity-25 my-2">
+                <hr class="text-muted opacity-10 my-2">
                 <div class="mt-auto">
                   ${item.status === 'Progress' ? `
                     <div class="job-box">
-                      <strong class="d-block text-danger mb-1" style="font-size:0.95rem;">🛠 ${item.detail.pekerjaan}</strong>
+                      <strong class="d-block text-danger mb-1" style="font-size:0.9rem;">🛠 ${item.detail.pekerjaan}</strong>
                       <div class="d-flex justify-content-between align-items-center mb-1">
                         <small class="text-dark fw-semibold">📍 STO ${item.detail.sto}</small>
-                        <span class="badge bg-secondary opacity-75">🕒 ${item.detail.mulai}</span>
+                        <span class="badge bg-secondary bg-opacity-25 text-dark">🕒 ${item.detail.mulai}</span>
                       </div>
                       <div class="mb-1 bg-white p-1 rounded border border-danger text-center">
-                        <small class="text-danger fw-bold">⏳ Sedang berjalan: ${item.detail.durasi}</small>
+                        <small class="text-danger fw-bold">⏳ Berjalan: ${item.detail.durasi}</small>
                       </div>
-                      <small class="text-muted d-block mt-2 border-top pt-1">
+                      <small class="text-muted d-block mt-2 border-top pt-1" style="font-size:0.8rem;">
                         👥 <b>Tim:</b> ${item.detail.utama} ${item.detail.partner && item.detail.partner !== '-' ? `& ${item.detail.partner}` : '(Sendiri)'}
                       </small>
                     </div>
                   ` : `
                     <div class="idle-box text-center text-muted">
-                      <span style="font-size: 1.5rem;">${isLibur ? '🏖️' : '☕'}</span><br>
-                      <small>${isLibur ? 'Sedang libur tugas' : 'Siap menerima order baru'}</small>
+                      <span style="font-size: 1.5rem;">${isLibur ? '🏖️' : (isPiket ? '🌙' : '☕')}</span><br>
+                      <small class="fw-medium">${isLibur ? 'Sedang libur tugas' : (isPiket ? 'Standby Shift 2 (Jam 13.00)' : 'Siap menerima order baru')}</small>
                     </div>
                   `}
                 </div>
@@ -235,61 +309,64 @@
       if(currentTab === 'live') document.getElementById('content-live').classList.remove('d-none');
     }
 
-    // ================= HISTORY TAB =================
-    async function loadHistory() {
+    // LOAD DATA HISTORY & PRODUKTIVITAS
+    async function loadHistoryAndProduk() {
       document.getElementById('loader').classList.remove('d-none');
       try {
         const response = await fetch('/api/history');
         historyData = await response.json();
         
-        // Otomatis isi kolom filter dengan tanggal hari ini
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('date-filter').value = today;
+        document.getElementById('date-produk').value = today;
         
-        filterHistory();
+        if (currentTab === 'history') filterHistory();
+        if (currentTab === 'produk') renderProduktivitas();
+
       } catch (error) {
-        document.getElementById('history-body').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Gagal memuat history.</td></tr>';
+        document.getElementById('history-body').innerHTML = '<tr><td colspan="6" class="text-center text-danger fw-bold">Gagal memuat data.</td></tr>';
       } finally {
         document.getElementById('loader').classList.add('d-none');
       }
     }
 
+    // RENDER TAB HISTORY
     function filterHistory() {
       const selectedDate = document.getElementById('date-filter').value;
       const selectedSA = document.getElementById('sa-filter').value;
       const tbody = document.getElementById('history-body');
       
-      if (!selectedDate) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Pilih tanggal dulu ya Mas!</td></tr>';
-        return;
-      }
+      if (!selectedDate) return;
 
-      // Filter berdasarkan tanggal DAN Service Area
-      let filtered = historyData.filter(h => h.tanggal === selectedDate);
+      // Filter berdasarkan tanggal (ambil YYYY-MM-DD dari string datetime Google Sheets)
+      let filtered = historyData.filter(h => h.tanggal.startsWith(selectedDate));
+      
       if (selectedSA !== 'ALL') {
-         filtered = filtered.filter(h => h.sa === selectedSA);
+         // Pastikan SA ada di data historis (kita ambil dari dashboardDataFull jika perlu)
+         filtered = filtered.filter(h => {
+             let tech = dashboardDataFull.find(t => t.nama === h.nama);
+             return tech && tech.sa === selectedSA;
+         });
       }
       
       if (filtered.length === 0) {
-         tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">Kosong. Tidak ada data di filter ini.</td></tr>`;
+         tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">Kosong. Tidak ada data pekerjaan.</td></tr>`;
          return;
       }
 
-      // Render tabel yang sudah difilter dan tampilkan Partner
       tbody.innerHTML = filtered.map(h => `
         <tr>
           <td class="fw-bold text-dark text-truncate" style="max-width: 150px;">${h.nama}</td>
-          <td class="text-primary fw-semibold">${h.pekerjaan || '-'}</td>
+          <td class="text-danger fw-semibold">${h.pekerjaan || '-'}</td>
           <td class="text-center">
-            <span class="badge bg-secondary mb-1">STO ${h.sto || '-'}</span>
-            <br>
+            <span class="badge bg-secondary mb-1">STO ${h.sto || '-'}</span><br>
             <small class="text-muted fw-bold" style="font-size: 0.75rem;">👥 ${h.partner ? h.partner : 'Sendiri'}</small>
           </td>
           <td class="text-nowrap text-center">
             <small class="d-block text-success fw-bold">${h.jamMulai || '-'}</small>
             <small class="d-block text-danger fw-bold">${h.jamSelesai || '-'}</small>
           </td>
-          <td class="text-center"><span class="badge bg-info text-dark shadow-sm">⏱️ ${h.durasi || '-'}</span></td>
+          <td class="text-center"><span class="badge bg-light text-dark border shadow-sm">⏱️ ${h.durasi || '-'}</span></td>
           <td class="text-center">
             <span class="badge ${h.status.toLowerCase() === 'selesai' ? 'bg-success' : 'bg-danger'}">
               ${h.status || 'Progress'}
@@ -297,6 +374,89 @@
           </td>
         </tr>
       `).join('');
+      document.getElementById('content-history').classList.remove('d-none');
+    }
+
+    // RENDER TAB PRODUKTIVITAS (Dihitung Otomatis di Browser!)
+    function renderProduktivitas() {
+      const selectedDate = document.getElementById('date-produk').value;
+      const selectedSA = document.getElementById('sa-filter').value;
+      const container = document.getElementById('container-produk');
+      
+      if (!selectedDate) return;
+
+      // 1. Filter Data Historis Sesuai Tanggal dan SA
+      let filtered = historyData.filter(h => h.tanggal.startsWith(selectedDate));
+      if (selectedSA !== 'ALL') {
+         filtered = filtered.filter(h => {
+             let tech = dashboardDataFull.find(t => t.nama === h.nama);
+             return tech && tech.sa === selectedSA;
+         });
+      }
+
+      // 2. Olah Data Metrik
+      let totalOrder = filtered.length;
+      let orderSelesai = filtered.filter(h => h.status.toLowerCase() === 'selesai').length;
+      let orderProgress = totalOrder - orderSelesai;
+      
+      let soloCount = filtered.filter(h => !h.partner || h.partner === '-').length;
+      let timCount = totalOrder - soloCount;
+
+      let stoCounts = {};
+      filtered.forEach(h => {
+         let sto = h.sto || 'Unknown';
+         stoCounts[sto] = (stoCounts[sto] || 0) + 1;
+      });
+      // Sort STO by highest workload
+      let sortedSto = Object.entries(stoCounts).sort((a,b) => b[1] - a[1]);
+
+      // 3. Render HTML
+      container.innerHTML = `
+        <div class="col-md-4">
+           <div class="card-produk p-4 text-center">
+             <h5 class="fw-bold text-muted mb-4">Total Tiket Hari Ini</h5>
+             <h1 class="display-3 fw-bold text-primary">${totalOrder}</h1>
+             <div class="d-flex justify-content-center gap-3 mt-3">
+                <span class="badge bg-success p-2">✅ ${orderSelesai} Selesai</span>
+                <span class="badge bg-danger p-2">⏳ ${orderProgress} Progress</span>
+             </div>
+           </div>
+        </div>
+
+        <div class="col-md-4">
+           <div class="card-produk p-4 text-center">
+             <h5 class="fw-bold text-muted mb-4">Gaya Kerja Tim</h5>
+             <div class="row align-items-center mt-3">
+               <div class="col-6 border-end">
+                  <h2 class="fw-bold text-dark">${soloCount}</h2>
+                  <small class="text-muted fw-bold">🏃 Kerja Solo</small>
+               </div>
+               <div class="col-6">
+                  <h2 class="fw-bold text-dark">${timCount}</h2>
+                  <small class="text-muted fw-bold">👥 Tim / Partner</small>
+               </div>
+             </div>
+           </div>
+        </div>
+
+        <div class="col-md-4">
+           <div class="card-produk p-4">
+             <h5 class="fw-bold text-muted mb-4 text-center">🏆 Top STO Tersibuk</h5>
+             <ul class="list-group list-group-flush mt-2">
+               ${sortedSto.slice(0,4).map((item, index) => `
+                 <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 border-light">
+                   <span class="fw-bold text-dark">
+                     ${index === 0 ? '🥇' : (index === 1 ? '🥈' : '🥉')} STO ${item[0]}
+                   </span>
+                   <span class="badge bg-danger rounded-pill">${item[1]} Tiket</span>
+                 </li>
+               `).join('')}
+               ${sortedSto.length === 0 ? '<li class="list-group-item text-center text-muted border-0">Tidak ada tiket masuk hari ini</li>' : ''}
+             </ul>
+           </div>
+        </div>
+      `;
+      document.getElementById('content-produk').classList.remove('d-none');
     }
 
     function updateJam() {
@@ -305,8 +465,10 @@
       document.getElementById('last-update').innerHTML = "Update terakhir: " + ts;
     }
 
+    // Auto Load Pertama Kali
     window.onload = function() {
       loadData();
+      // Auto refresh tab live setiap 30 detik
       setInterval(() => { if(currentTab === 'live') loadData(); }, 30000); 
     };
   </script>
