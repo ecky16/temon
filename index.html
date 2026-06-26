@@ -5,82 +5,22 @@
   <title>Dashboard TeMon</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    /* Import Font Poppins */
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+    body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .header-bar { background-color: #1a365d; color: white; padding: 15px 20px; border-radius: 8px; margin-top: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .card-tech { border: none; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); transition: transform 0.2s; height: 100%; }
+    .card-tech:hover { transform: translateY(-5px); }
+    .status-badge { font-weight: 600; padding: 6px 15px; border-radius: 20px; font-size: 0.85rem; letter-spacing: 0.5px; }
     
-    body { 
-      background-color: #f0f2f5; 
-      font-family: 'Poppins', sans-serif; 
-      color: #2d3748;
-    }
-    
-    /* Header Gradasi Elegan */
-    .header-bar { 
-      background: linear-gradient(135deg, #e53935 0%, #1a365d 100%); 
-      color: white; 
-      padding: 18px 24px; 
-      border-radius: 16px; 
-      margin-top: 20px; 
-      box-shadow: 0 10px 20px rgba(0,0,0,0.1); 
-    }
-    
-    /* Soft UI Cards */
-    .card-tech { 
-      border: 1px solid rgba(0,0,0,0.04); 
-      border-radius: 16px; 
-      box-shadow: 0 6px 16px rgba(0,0,0,0.04); 
-      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
-      height: 100%; 
-      background: #ffffff;
-    }
-    .card-tech:hover { 
-      transform: translateY(-5px); 
-      box-shadow: 0 14px 28px rgba(0,0,0,0.1); 
-    }
-    
-    /* Indikator Atas Kartu */
-    .indicator-line { 
-      height: 6px; 
-      border-radius: 16px 16px 0 0; 
-    }
-    
-    /* Animasi Pulse untuk yang Sedang Bekerja */
-    @keyframes pulse-red {
-      0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
-      70% { box-shadow: 0 0 0 8px rgba(220, 53, 69, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
-    }
-    .pulse-working {
-      animation: pulse-red 2s infinite;
-    }
-
-    /* Badge & Box Styling */
-    .status-badge { 
-      font-weight: 600; 
-      padding: 6px 16px; 
-      border-radius: 30px; 
-      font-size: 0.8rem; 
-      letter-spacing: 0.5px; 
-    }
     .bg-idle { background-color: #d1e7dd; color: #0f5132; }
     .bg-working { background-color: #f8d7da; color: #842029; }
     .bg-libur { background-color: #fff3cd; color: #856404; }
-    .bg-piket-jadwal { background-color: #f3e8ff !important; color: #6b21a8 !important; }
     
-    .job-box { background-color: #fffafb; border: 1px solid #ffe5e5; padding: 12px; border-radius: 12px; }
-    .idle-box { background-color: #f8fafc; border: 1px dashed #cbd5e0; padding: 15px; border-radius: 12px; }
+    .indicator-line { height: 6px; border-radius: 10px 10px 0 0; }
+    .job-box { background-color: #fff5f5; border: 1px solid #fed7d7; padding: 10px; border-radius: 6px; }
+    .idle-box { background-color: #f8fafc; border: 1px dashed #cbd5e0; padding: 15px; border-radius: 6px; }
     
-    /* Nav Tabs Kekinian */
-    .nav-tabs { border-bottom: 2px solid #e2e8f0; }
-    .nav-tabs .nav-link { font-weight: 600; color: #718096; cursor: pointer; border: none; padding: 12px 20px; transition: all 0.2s;}
-    .nav-tabs .nav-link:hover { color: #1a365d; }
-    .nav-tabs .nav-link.active { color: #e53935; border-bottom: 3px solid #e53935; background-color: transparent; }
-
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #a0aec0; }
+    .nav-tabs .nav-link { font-weight: bold; color: #1a365d; cursor: pointer; border: none; }
+    .nav-tabs .nav-link.active { color: #dc3545; border-bottom: 3px solid #dc3545; background-color: transparent; }
   </style>
 </head>
 <body>
@@ -223,7 +163,7 @@
       }
     }
 
-   function renderCards(data) {
+    function renderCards(data) {
       var container = document.getElementById('container-teknisi');
       container.innerHTML = '';
       
@@ -236,7 +176,6 @@
       data.forEach(function(item) {
         var isIdle = item.status === "Idle";
         var isLibur = item.jadwal === "Libur";
-        var isPiket = item.jadwal === "Piket"; // <-- Deteksi apakah statusnya Piket
         
         var badgeClass = isIdle ? "bg-idle" : "bg-working";
         var indicatorColor = isIdle ? "#198754" : "#dc3545";
@@ -248,14 +187,6 @@
             textStatus = "LIBUR";
         }
         
-        // Pilihan Badge untuk status Jadwal (Masuk / Libur / Piket)
-        var jadwalBadgeClass = "bg-primary";
-        if (isLibur) {
-          jadwalBadgeClass = "bg-warning text-dark";
-        } else if (isPiket) {
-          jadwalBadgeClass = "bg-piket-jadwal"; // Gunakan class warna ungu tadi
-        }
-        
         var cardHtml = `
           <div class="col-md-4 col-lg-3">
             <div class="card card-tech">
@@ -265,9 +196,7 @@
                   <div>
                     <h5 class="card-title fw-bold mb-0 text-dark">${item.nama}</h5>
                     <small class="text-muted">NIK: ${item.nik} | SA: <b>${item.sa || '-'}</b></small>
-                    <div class="mt-1">
-                      <span class="badge ${jadwalBadgeClass}">${isPiket ? '⏱️ Piket (Shift 2)' : item.jadwal}</span>
-                    </div>
+                    <div class="mt-1"><span class="badge ${isLibur ? 'bg-warning text-dark' : 'bg-primary'}">${item.jadwal}</span></div>
                   </div>
                   <span class="status-badge ${badgeClass}">${textStatus}</span>
                 </div>
@@ -289,8 +218,8 @@
                     </div>
                   ` : `
                     <div class="idle-box text-center text-muted">
-                      <span style="font-size: 1.5rem;">${isLibur ? '🏖️' : (isPiket ? '🌙' : '☕')}</span><br>
-                      <small>${isLibur ? 'Sedang libur tugas' : (isPiket ? 'Standby Shift 2 (Jam 13.00)' : 'Siap menerima order baru')}</small>
+                      <span style="font-size: 1.5rem;">${isLibur ? '🏖️' : '☕'}</span><br>
+                      <small>${isLibur ? 'Sedang libur tugas' : 'Siap menerima order baru'}</small>
                     </div>
                   `}
                 </div>
@@ -331,7 +260,7 @@
       const tbody = document.getElementById('history-body');
       
       if (!selectedDate) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted small py-2">Pilih tanggal dulu ya Mas!</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Pilih tanggal dulu ya Mas!</td></tr>';
         return;
       }
 
@@ -342,28 +271,27 @@
       }
       
       if (filtered.length === 0) {
-         tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted small py-3">Kosong. Tidak ada data di filter ini.</td></tr>`;
+         tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">Kosong. Tidak ada data di filter ini.</td></tr>`;
          return;
       }
 
-      // Render tabel dengan font lebih kecil (small), padding rapat (py-1 px-2), dan nama teknisi utuh (tanpa truncate)
+      // Render tabel yang sudah difilter dan tampilkan Partner
       tbody.innerHTML = filtered.map(h => `
-        <tr style="font-size: 0.75rem;">
-          <td class="fw-bold text-dark py-1 px-2">${h.nama}</td>
-          <td class="text-primary fw-semibold py-1 px-2">${h.pekerjaan || '-'}</td>
-          <td class="text-center py-1 px-2">
-            <span class="badge bg-secondary" style="font-size: 0.6rem; padding: 2px 6px;">STO ${h.sto || '-'}</span>
-            <div class="text-muted fw-bold mt-1" style="font-size: 0.65rem;">👥 ${h.partner ? h.partner : 'Sendiri'}</div>
+        <tr>
+          <td class="fw-bold text-dark text-truncate" style="max-width: 150px;">${h.nama}</td>
+          <td class="text-primary fw-semibold">${h.pekerjaan || '-'}</td>
+          <td class="text-center">
+            <span class="badge bg-secondary mb-1">STO ${h.sto || '-'}</span>
+            <br>
+            <small class="text-muted fw-bold" style="font-size: 0.75rem;">👥 ${h.partner ? h.partner : 'Sendiri'}</small>
           </td>
-          <td class="text-nowrap text-center py-1 px-2">
-            <small class="d-block text-success fw-bold" style="font-size: 0.7rem;">${h.jamMulai || '-'}</small>
-            <small class="d-block text-danger fw-bold" style="font-size: 0.7rem;">${h.jamSelesai || '-'}</small>
+          <td class="text-nowrap text-center">
+            <small class="d-block text-success fw-bold">${h.jamMulai || '-'}</small>
+            <small class="d-block text-danger fw-bold">${h.jamSelesai || '-'}</small>
           </td>
-          <td class="text-center py-1 px-2">
-            <span class="badge bg-info text-dark shadow-sm" style="font-size: 0.65rem; padding: 2px 6px;">⏱️ ${h.durasi || '-'}</span>
-          </td>
-          <td class="text-center py-1 px-2">
-            <span class="badge ${h.status.toLowerCase() === 'selesai' ? 'bg-success' : 'bg-danger'}" style="font-size: 0.65rem; padding: 3px 8px;">
+          <td class="text-center"><span class="badge bg-info text-dark shadow-sm">⏱️ ${h.durasi || '-'}</span></td>
+          <td class="text-center">
+            <span class="badge ${h.status.toLowerCase() === 'selesai' ? 'bg-success' : 'bg-danger'}">
               ${h.status || 'Progress'}
             </span>
           </td>
