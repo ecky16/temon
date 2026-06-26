@@ -86,12 +86,25 @@
       </div>
     </div>
 
-    <div class="row mb-3">
-      <div class="col-md-4">
-        <label class="form-label fw-bold text-muted">📍 Filter Service Area:</label>
-        <select id="sa-filter" class="form-select border-danger fw-bold shadow-sm" style="border-radius: 10px;" onchange="applyGlobalFilter()">
-          <option value="ALL">Semua Area</option>
-        </select>
+    <div class="card p-3 border-0 shadow-sm mb-4" style="border-radius: 16px; background: #ffffff;">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label fw-bold text-muted small">📍 SERVICE AREA:</label>
+          <select id="sa-filter" class="form-select border-danger fw-bold shadow-sm" style="border-radius: 10px;" onchange="applyGlobalFilter()">
+            <option value="ALL">Semua Area</option>
+          </select>
+        </div>
+        <div class="col-md-3" id="div-start-date">
+          <label class="form-label fw-bold text-muted small">📅 TANGGAL MULAI:</label>
+          <input type="date" id="start-date" class="form-control border-danger fw-medium shadow-sm" style="border-radius: 10px;" onchange="applyGlobalFilter()">
+        </div>
+        <div class="col-md-3" id="div-end-date">
+          <label class="form-label fw-bold text-muted small">📅 TANGGAL SELESAI:</label>
+          <input type="date" id="end-date" class="form-control border-danger fw-medium shadow-sm" style="border-radius: 10px;" onchange="applyGlobalFilter()">
+        </div>
+        <div class="col-md-3 text-end d-md-none">
+          <button onclick="refreshCurrentTab()" class="btn btn-danger btn-sm w-100 fw-bold rounded-pill">🔄 Refresh Data</button>
+        </div>
       </div>
     </div>
 
@@ -117,16 +130,10 @@
     </div>
 
     <div id="content-history" class="d-none">
-      <div class="card p-4 border-0 shadow-sm" style="border-radius: 16px;">
-        <div class="row mb-3 align-items-end">
-          <div class="col-md-4">
-            <label class="form-label fw-bold text-muted">Filter Tanggal:</label>
-            <input type="date" id="date-filter" class="form-control border-danger fw-medium shadow-sm" style="border-radius: 10px;" onchange="filterHistory()">
-          </div>
-        </div>
+      <div class="card p-3 border-0 shadow-sm" style="border-radius: 16px;">
         <div class="table-responsive">
-          <table class="table table-hover table-sm align-middle">
-            <thead class="table-dark" style="border-radius: 10px 10px 0 0; overflow: hidden;">
+          <table class="table table-hover table-sm align-middle mb-0">
+            <thead class="table-dark">
               <tr>
                 <th class="py-2">Nama Teknisi</th>
                 <th class="py-2">Pekerjaan</th>
@@ -145,12 +152,6 @@
     </div>
 
     <div id="content-produk" class="d-none">
-      <div class="row mb-3">
-         <div class="col-md-4">
-            <label class="form-label fw-bold text-muted">Analisis Tanggal:</label>
-            <input type="date" id="date-produk" class="form-control border-primary fw-medium shadow-sm" style="border-radius: 10px;" onchange="renderProduktivitas()">
-         </div>
-      </div>
       <div class="row g-4" id="container-produk">
         </div>
     </div>
@@ -173,6 +174,10 @@
       document.getElementById('content-history').classList.toggle('d-none', tab !== 'history');
       document.getElementById('content-produk').classList.toggle('d-none', tab !== 'produk');
       
+      // Sembunyikan input tanggal jika di tab Live (karena Live selalu hari ini)
+      document.getElementById('div-start-date').style.visibility = tab === 'live' ? 'hidden' : 'visible';
+      document.getElementById('div-end-date').style.visibility = tab === 'live' ? 'hidden' : 'visible';
+
       if(tab === 'live') {
          if(dashboardDataFull.length === 0) loadData(); else applyGlobalFilter();
       } else {
@@ -199,6 +204,7 @@
        if(uniqueSA.includes(currentVal)) select.value = currentVal;
     }
 
+    // Aksi filter gabungan
     function applyGlobalFilter() {
        if(currentTab === 'live') {
           const selectedSA = document.getElementById('sa-filter').value;
@@ -316,13 +322,12 @@
         const response = await fetch('/api/history');
         historyData = await response.json();
         
+        // Default set awal rentang: Hari ini s.d Hari ini
         const today = new Date().toISOString().split('T')[0];
-        document.getElementById('date-filter').value = today;
-        document.getElementById('date-produk').value = today;
+        if(!document.getElementById('start-date').value) document.getElementById('start-date').value = today;
+        if(!document.getElementById('end-date').value) document.getElementById('end-date').value = today;
         
-        if (currentTab === 'history') filterHistory();
-        if (currentTab === 'produk') renderProduktivitas();
-
+        applyGlobalFilter();
       } catch (error) {
         document.getElementById('history-body').innerHTML = '<tr><td colspan="6" class="text-center text-danger fw-bold">Gagal memuat data.</td></tr>';
       } finally {
@@ -330,19 +335,28 @@
       }
     }
 
-    // RENDER TAB HISTORY
+    // Fungsi Pembantu Cek Apakah Tanggal Masuk Rentang
+    function isDateInRange(targetDateStr, startDateStr, endDateStr) {
+       if(!targetDateStr) return false;
+       // targetDateStr berbentuk "YYYY-MM-DD" atau "YYYY-MM-DD HH:mm:ss"
+       let target = targetDateStr.substring(0, 10); 
+       return target >= startDateStr && target <= endDateStr;
+    }
+
+    // RENDER TAB HISTORY DENGAN RENTANG TANGGAL
     function filterHistory() {
-      const selectedDate = document.getElementById('date-filter').value;
+      const start = document.getElementById('start-date').value;
+      const end = document.getElementById('end-date').value;
       const selectedSA = document.getElementById('sa-filter').value;
       const tbody = document.getElementById('history-body');
       
-      if (!selectedDate) return;
+      if (!start || !end) return;
 
-      // Filter berdasarkan tanggal (ambil YYYY-MM-DD dari string datetime Google Sheets)
-      let filtered = historyData.filter(h => h.tanggal.startsWith(selectedDate));
+      // Filter data berdasar range tanggal
+      let filtered = historyData.filter(h => isDateInRange(h.tanggal, start, end));
       
+      // Filter berdasar Service Area
       if (selectedSA !== 'ALL') {
-         // Pastikan SA ada di data historis (kita ambil dari dashboardDataFull jika perlu)
          filtered = filtered.filter(h => {
              let tech = dashboardDataFull.find(t => t.nama === h.nama);
              return tech && tech.sa === selectedSA;
@@ -350,7 +364,7 @@
       }
       
       if (filtered.length === 0) {
-         tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">Kosong. Tidak ada data pekerjaan.</td></tr>`;
+         tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">Tidak ada data pekerjaan pada rentang tanggal tersebut.</td></tr>`;
          return;
       }
 
@@ -360,11 +374,12 @@
           <td class="text-danger fw-semibold">${h.pekerjaan || '-'}</td>
           <td class="text-center">
             <span class="badge bg-secondary mb-1">STO ${h.sto || '-'}</span><br>
-            <small class="text-muted fw-bold" style="font-size: 0.75rem;">👥 ${h.partner ? h.partner : 'Sendiri'}</small>
+            <small class="text-muted fw-bold" style="font-size: 0.75rem;">👥 ${h.partner && h.partner !== '-' ? h.partner : 'Sendiri'}</small>
           </td>
           <td class="text-nowrap text-center">
-            <small class="d-block text-success fw-bold">${h.jamMulai || '-'}</small>
-            <small class="d-block text-danger fw-bold">${h.jamSelesai || '-'}</small>
+            <small class="text-muted d-block small">${h.tanggal.substring(5,10)}</small>
+            <small class="text-success fw-bold">${h.jamMulai || '-'}</small> s.d 
+            <small class="text-danger fw-bold">${h.jamSelesai || '-'}</small>
           </td>
           <td class="text-center"><span class="badge bg-light text-dark border shadow-sm">⏱️ ${h.durasi || '-'}</span></td>
           <td class="text-center">
@@ -377,16 +392,17 @@
       document.getElementById('content-history').classList.remove('d-none');
     }
 
-    // RENDER TAB PRODUKTIVITAS (Dihitung Otomatis di Browser!)
+    // RENDER TAB PRODUKTIVITAS DENGAN RENTANG TANGGAL
     function renderProduktivitas() {
-      const selectedDate = document.getElementById('date-produk').value;
+      const start = document.getElementById('start-date').value;
+      const end = document.getElementById('end-date').value;
       const selectedSA = document.getElementById('sa-filter').value;
       const container = document.getElementById('container-produk');
       
-      if (!selectedDate) return;
+      if (!start || !end) return;
 
-      // 1. Filter Data Historis Sesuai Tanggal dan SA
-      let filtered = historyData.filter(h => h.tanggal.startsWith(selectedDate));
+      // 1. Filter Data Historis Sesuai Rentang Tanggal dan SA
+      let filtered = historyData.filter(h => isDateInRange(h.tanggal, start, end));
       if (selectedSA !== 'ALL') {
          filtered = filtered.filter(h => {
              let tech = dashboardDataFull.find(t => t.nama === h.nama);
@@ -394,7 +410,7 @@
          });
       }
 
-      // 2. Olah Data Metrik
+      // 2. Olah Data Metrik Kelompok Rentang
       let totalOrder = filtered.length;
       let orderSelesai = filtered.filter(h => h.status.toLowerCase() === 'selesai').length;
       let orderProgress = totalOrder - orderSelesai;
@@ -407,41 +423,42 @@
          let sto = h.sto || 'Unknown';
          stoCounts[sto] = (stoCounts[sto] || 0) + 1;
       });
-      // Sort STO by highest workload
       let sortedSto = Object.entries(stoCounts).sort((a,b) => b[1] - a[1]);
 
-      // 3. Render HTML
+      // 3. Render HTML Ringkasan Berdasarkan Rentang Waktu
       container.innerHTML = `
         <div class="col-md-4">
            <div class="card-produk p-4 text-center">
-             <h5 class="fw-bold text-muted mb-4">Total Tiket Hari Ini</h5>
+             <h5 class="fw-bold text-muted mb-3">Total Tiket Dikerjakan</h5>
              <h1 class="display-3 fw-bold text-primary">${totalOrder}</h1>
-             <div class="d-flex justify-content-center gap-3 mt-3">
+             <div class="d-flex justify-content-center gap-2 mt-3">
                 <span class="badge bg-success p-2">✅ ${orderSelesai} Selesai</span>
                 <span class="badge bg-danger p-2">⏳ ${orderProgress} Progress</span>
              </div>
+             <small class="text-muted d-block mt-3 bg-light p-1 rounded">Rentang: <b>${start}</b> s.d <b>${end}</b></small>
            </div>
         </div>
 
         <div class="col-md-4">
            <div class="card-produk p-4 text-center">
-             <h5 class="fw-bold text-muted mb-4">Gaya Kerja Tim</h5>
+             <h5 class="fw-bold text-muted mb-4">Metode Penugasan Tim</h5>
              <div class="row align-items-center mt-3">
                <div class="col-6 border-end">
                   <h2 class="fw-bold text-dark">${soloCount}</h2>
-                  <small class="text-muted fw-bold">🏃 Kerja Solo</small>
+                  <small class="text-muted fw-bold">🏃 Tiket Solo</small>
                </div>
                <div class="col-6">
                   <h2 class="fw-bold text-dark">${timCount}</h2>
-                  <small class="text-muted fw-bold">👥 Tim / Partner</small>
+                  <small class="text-muted fw-bold">👥 Kerja Tim</small>
                </div>
              </div>
+             <p class="text-muted small mt-4 mb-0">Rasio tim membantu analisis efisiensi alokasi partner teknisi di lapangan.</p>
            </div>
         </div>
 
         <div class="col-md-4">
            <div class="card-produk p-4">
-             <h5 class="fw-bold text-muted mb-4 text-center">🏆 Top STO Tersibuk</h5>
+             <h5 class="fw-bold text-muted mb-3 text-center">🏆 Top STO Tersibuk</h5>
              <ul class="list-group list-group-flush mt-2">
                ${sortedSto.slice(0,4).map((item, index) => `
                  <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 border-light">
@@ -451,7 +468,7 @@
                    <span class="badge bg-danger rounded-pill">${item[1]} Tiket</span>
                  </li>
                `).join('')}
-               ${sortedSto.length === 0 ? '<li class="list-group-item text-center text-muted border-0">Tidak ada tiket masuk hari ini</li>' : ''}
+               ${sortedSto.length === 0 ? '<li class="list-group-item text-center text-muted border-0 py-4">Tidak ada data penugasan</li>' : ''}
              </ul>
            </div>
         </div>
@@ -467,7 +484,11 @@
 
     // Auto Load Pertama Kali
     window.onload = function() {
+      // Sembunyikan filter rentang di awal karena tab default adalah 'live'
+      document.getElementById('div-start-date').style.visibility = 'hidden';
+      document.getElementById('div-end-date').style.visibility = 'hidden';
       loadData();
+      
       // Auto refresh tab live setiap 30 detik
       setInterval(() => { if(currentTab === 'live') loadData(); }, 30000); 
     };
