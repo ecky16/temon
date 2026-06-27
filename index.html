@@ -278,6 +278,7 @@
     }
 
     // RENDER KARTU TAB LIVE & UPDATE SUMMARY
+    // RENDER KARTU TAB LIVE & UPDATE SUMMARY
     function renderCards(data) {
       
       // MENGHITUNG DATA SUMMARY
@@ -287,6 +288,7 @@
         let isLibur = item.jadwal === "Libur";
         let isPiket = item.jadwal === "Piket";
         
+        // 1. Hitung Jadwal Kehadiran
         if (isLibur) {
             tLibur++;
         } else if (isPiket) {
@@ -295,9 +297,11 @@
             tMasuk++;
         }
 
+        // 2. Hitung Status Pekerjaan (PERBAIKAN DI SINI)
         if (item.status === 'Progress') {
             tProg++;
-        } else if (item.status === 'Idle') {
+        } else if (item.status === 'Idle' && !isLibur) {
+            // Hitung Idle HANYA jika statusnya Idle DAN teknisi tidak sedang libur
             tIdle++;
         }
       });
