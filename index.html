@@ -444,7 +444,7 @@
 
       tbody.innerHTML = filtered.map(h => `
         <tr>
-          <td class="fw-bold text-dark text-truncate" style="max-width: 150px;">${h.nama}</td>
+          <td class="fw-bold text-dark" style="max-width: 150px; font-size: 0.85rem; white-space: normal; word-wrap: break-word;">${h.nama}</td>
           <td class="text-danger fw-semibold">${h.pekerjaan || '-'}</td>
           <td class="text-center">
             <span class="badge bg-secondary mb-1">STO ${h.sto || '-'}</span><br>
