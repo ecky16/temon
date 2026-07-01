@@ -288,16 +288,21 @@
     // RENDER KARTU TAB LIVE & UPDATE SUMMARY
     // RENDER KARTU TAB LIVE & UPDATE SUMMARY
     // RENDER KARTU TAB LIVE & UPDATE SUMMARY
+   // RENDER KARTU TAB LIVE & UPDATE SUMMARY
     function renderCards(data) {
       
       // MENGHITUNG DATA SUMMARY
       let tMasuk = 0, tShift2 = 0, tLibur = 0, tCuti = 0, tBantek = 0, tProg = 0, tIdle = 0;
       
       data.forEach(item => {
-        let isLibur = item.jadwal === "Libur";
-        let isPiket = item.jadwal === "Piket" || item.jadwal === "Shift 2";
-        let isCuti = item.jadwal === "C" || item.jadwal === "Cuti";
-        let isBantek = item.jadwal === "B" || item.jadwal === "Bantek";
+        // [PERBAIKAN] Bersihkan spasi dan jadikan huruf besar semua untuk mempermudah pengecekan
+        let jdw = item.jadwal ? item.jadwal.toString().trim().toUpperCase() : "";
+        let stat = item.status ? item.status.toString().trim().toUpperCase() : "";
+        
+        let isLibur = jdw === "LIBUR";
+        let isPiket = jdw === "PIKET" || jdw === "SHIFT 2";
+        let isCuti = jdw === "C" || jdw === "CUTI";
+        let isBantek = jdw === "B" || jdw === "BANTEK";
         
         // 1. Hitung Jadwal Kehadiran
         if (isLibur) {
@@ -313,9 +318,9 @@
         }
 
         // 2. Hitung Status Pekerjaan
-        if (item.status === 'Progress') {
+        if (stat === 'PROGRESS') {
             tProg++;
-        } else if (item.status === 'Idle' && !isLibur && !isCuti) {
+        } else if (stat === 'IDLE' && !isLibur && !isCuti) {
             // Cuti dan Libur TIDAK dihitung sebagai Idle
             tIdle++;
         }
@@ -337,24 +342,33 @@
       container.innerHTML = '';
       
       data.sort((a, b) => {
+        let jdwA = a.jadwal ? a.jadwal.toString().trim().toUpperCase() : "";
+        let jdwB = b.jadwal ? b.jadwal.toString().trim().toUpperCase() : "";
+        let statA = a.status ? a.status.toString().trim().toUpperCase() : "";
+        let statB = b.status ? b.status.toString().trim().toUpperCase() : "";
+
         // Yang Libur atau Cuti otomatis ditaruh paling bawah
-        let isA_Off = (a.jadwal === 'Libur' || a.jadwal === 'C' || a.jadwal === 'Cuti');
-        let isB_Off = (b.jadwal === 'Libur' || b.jadwal === 'C' || b.jadwal === 'Cuti');
-        let rankA = a.status === 'Progress' ? 1 : (isA_Off ? 3 : 2);
-        let rankB = b.status === 'Progress' ? 1 : (isB_Off ? 3 : 2);
+        let isA_Off = (jdwA === 'LIBUR' || jdwA === 'C' || jdwA === 'CUTI');
+        let isB_Off = (jdwB === 'LIBUR' || jdwB === 'C' || jdwB === 'CUTI');
+        
+        let rankA = statA === 'PROGRESS' ? 1 : (isA_Off ? 3 : 2);
+        let rankB = statB === 'PROGRESS' ? 1 : (isB_Off ? 3 : 2);
         return rankA - rankB;
       });
 
       data.forEach(function(item) {
-        var isIdle = item.status === "Idle";
-        var isLibur = item.jadwal === "Libur";
-        var isPiket = item.jadwal === "Piket" || item.jadwal === "Shift 2";
-        var isCuti = item.jadwal === "C" || item.jadwal === "Cuti";
-        var isBantek = item.jadwal === "B" || item.jadwal === "Bantek";
+        let jdw = item.jadwal ? item.jadwal.toString().trim().toUpperCase() : "";
+        let stat = item.status ? item.status.toString().trim().toUpperCase() : "";
+
+        var isIdle = stat === "IDLE";
+        var isLibur = jdw === "LIBUR";
+        var isPiket = jdw === "PIKET" || jdw === "SHIFT 2";
+        var isCuti = jdw === "C" || jdw === "CUTI";
+        var isBantek = jdw === "B" || jdw === "BANTEK";
         
         var badgeClass = isIdle ? "bg-idle" : "bg-working pulse-working"; 
         var indicatorColor = isIdle ? "#198754" : "#dc3545";
-        var textStatus = item.status.toUpperCase();
+        var textStatus = item.status ? item.status.toUpperCase() : "-";
 
         if (isLibur && isIdle) {
             badgeClass = "bg-libur";
@@ -367,7 +381,7 @@
         }
         
         var jadwalBadgeClass = "bg-primary";
-        var teksJadwal = item.jadwal;
+        var teksJadwal = item.jadwal; // Tetap simpan teks aslinya
         
         if (isLibur) {
           jadwalBadgeClass = "bg-warning text-dark";
@@ -399,7 +413,7 @@
                 </div>
                 <hr class="text-muted opacity-10 my-2">
                 <div class="mt-auto">
-                  ${item.status === 'Progress' ? `
+                  ${stat === 'PROGRESS' ? `
                     <div class="job-box">
                       <strong class="d-block text-danger mb-1" style="font-size:0.9rem;">🛠 ${item.detail.pekerjaan}</strong>
                       <div class="d-flex justify-content-between align-items-center mb-1">
