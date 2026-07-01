@@ -86,7 +86,6 @@
       </div>
     </div>
 
-    <!-- FILTER AREA -->
     <div class="card p-3 border-0 shadow-sm mb-4" style="border-radius: 16px; background: #ffffff;">
       <div class="row g-3 align-items-end">
         <div class="col-md-3">
@@ -126,11 +125,9 @@
       <h5 class="mt-3 fw-semibold text-muted" id="loader-text">Sinkronisasi Data...</h5>
     </div>
 
-    <!-- AREA LIVE MONITORING -->
     <div id="content-live" class="d-none">
       
-      <!-- KOTAK SUMMARY STATS (HANYA MUNCUL DI LIVE TAB) -->
-     <div class="row g-3 mb-4">
+      <div class="row g-3 mb-4">
         <div class="col-md-6">
           <div class="card border-0 shadow-sm" style="border-radius: 12px; height: 100%;">
             <div class="card-body p-3">
@@ -176,13 +173,10 @@
           </div>
         </div>
       </div>
-      <!-- END KOTAK SUMMARY STATS -->
 
-      <!-- TEMPAT KARTU DI RENDER -->
       <div id="container-teknisi" class="row g-4"></div>
     </div>
 
-    <!-- AREA HISTORY -->
     <div id="content-history" class="d-none">
       <div class="card p-3 border-0 shadow-sm" style="border-radius: 16px;">
         <div class="table-responsive">
@@ -205,7 +199,6 @@
       </div>
     </div>
 
-    <!-- AREA PRODUKTIVITAS -->
     <div id="content-produk" class="d-none">
       <div class="row g-4" id="container-produk">
       </div>
@@ -229,7 +222,6 @@
       document.getElementById('content-history').classList.toggle('d-none', tab !== 'history');
       document.getElementById('content-produk').classList.toggle('d-none', tab !== 'produk');
       
-      // Sembunyikan input tanggal jika di tab Live
       document.getElementById('div-start-date').style.visibility = tab === 'live' ? 'hidden' : 'visible';
       document.getElementById('div-end-date').style.visibility = tab === 'live' ? 'hidden' : 'visible';
 
@@ -285,46 +277,39 @@
       }
     }
 
-    // RENDER KARTU TAB LIVE & UPDATE SUMMARY
-   // RENDER KARTU TAB LIVE & UPDATE SUMMARY
+    // RENDER KARTU TAB LIVE (DENGAN JARING KETAT)
     function renderCards(data) {
       
-      // MENGHITUNG DATA SUMMARY
       let tMasuk = 0, tShift2 = 0, tLibur = 0, tCuti = 0, tBantek = 0, tProg = 0, tIdle = 0;
       
       data.forEach(item => {
         let jdw = item.jadwal ? item.jadwal.toString().trim().toUpperCase() : "";
         let stat = item.status ? item.status.toString().trim().toUpperCase() : "";
         
-        // Jaring Deteksi Super Ketat: Cek di jadwal maupun di status
         let isLibur = jdw.includes("LIBUR") || stat.includes("LIBUR");
         let isPiket = jdw.includes("PIKET") || jdw.includes("SHIFT 2");
         let isCuti = jdw === "C" || jdw.includes("CUTI") || stat === "C" || stat.includes("CUTI");
         let isBantek = jdw === "B" || jdw.includes("BANTEK") || stat === "B" || stat.includes("BANTEK");
         
-        // 1. Hitung Jadwal Kehadiran
         if (isLibur) {
             tLibur++;
         } else if (isCuti) {
             tCuti++;
         } else if (isBantek) {
-            tBantek++; // Pasti masuk sini kalau B / Bantek
+            tBantek++; 
         } else if (isPiket) {
             tShift2++;
         } else {
-            tMasuk++; // Bantek tidak akan nyasar jadi "Masuk" lagi
+            tMasuk++; 
         }
 
-        // 2. Hitung Status Pekerjaan
         if (stat === 'PROGRESS') {
             tProg++;
         } else if (stat === 'IDLE' && !isLibur && !isCuti && !isBantek) {
-            // Bantek, Cuti, dan Libur DILARANG masuk hitungan Idle
             tIdle++;
         }
       });
       
-      // Update Angka di HTML Summary Box
       document.getElementById('sum-masuk').innerText = tMasuk;
       document.getElementById('sum-shift2').innerText = tShift2;
       document.getElementById('sum-libur').innerText = tLibur;
@@ -335,7 +320,6 @@
       document.getElementById('sum-idle').innerText = tIdle;
       document.getElementById('sum-total').innerText = data.length;
 
-      // RENDER DOM KARTU
       var container = document.getElementById('container-teknisi');
       container.innerHTML = '';
       
@@ -367,7 +351,6 @@
         var indicatorColor = isIdle ? "#198754" : "#dc3545";
         var textStatus = item.status ? item.status.toUpperCase() : "-";
 
-        // OVERRIDE TAMPILAN STATUS JIKA DIA CUTI / BANTEK / LIBUR
         if (isLibur && isIdle) {
             badgeClass = "bg-libur";
             indicatorColor = "#f59e0b";
@@ -377,7 +360,7 @@
             indicatorColor = "#6c757d";
             textStatus = "CUTI";
         } else if (isBantek && isIdle) {
-            badgeClass = "bg-info text-dark"; // Badge status jadi Biru Terang
+            badgeClass = "bg-info text-dark"; 
             indicatorColor = "#0dcaf0";
             textStatus = "BANTEK";
         }
@@ -518,7 +501,6 @@
       document.getElementById('content-history').classList.remove('d-none');
     }
 
-   // RENDER TAB PRODUKTIVITAS DENGAN RENTANG TANGGAL
     function renderProduktivitas() {
       const start = document.getElementById('start-date').value;
       const end = document.getElementById('end-date').value;
@@ -527,7 +509,6 @@
       
       if (!start || !end) return;
 
-      // 1. Filter Data Historis Sesuai Rentang Tanggal dan SA
       let filtered = historyData.filter(h => isDateInRange(h.tanggal, start, end));
       if (selectedSA !== 'ALL') {
          filtered = filtered.filter(h => {
@@ -536,7 +517,6 @@
          });
       }
 
-      // 2. Olah Data Metrik Kelompok Rentang
       let totalOrder = filtered.length;
       let orderSelesai = filtered.filter(h => h.status.toLowerCase() === 'selesai').length;
       let orderProgress = totalOrder - orderSelesai;
@@ -551,20 +531,16 @@
       });
       let sortedSto = Object.entries(stoCounts).sort((a,b) => b[1] - a[1]);
 
-      // 3. Olah Data Pekerjaan Per Teknisi (Leaderboard)
-      // Ambil daftar semua teknisi sesuai filter SA (agar yang 0 pekerjaan tetap muncul)
       let baseTechs = dashboardDataFull;
       if (selectedSA !== 'ALL') {
           baseTechs = baseTechs.filter(t => t.sa === selectedSA);
       }
 
       let techJobCounts = {};
-      // Inisialisasi semua teknisi dengan 0 pekerjaan terlebih dahulu
       baseTechs.forEach(t => {
           techJobCounts[t.nama] = { total: 0, selesai: 0, progress: 0 };
       });
 
-      // Hitung pekerjaan dari data historis
       filtered.forEach(h => {
           if (techJobCounts[h.nama]) {
               techJobCounts[h.nama].total++;
@@ -574,7 +550,6 @@
                   techJobCounts[h.nama].progress++;
               }
           } else {
-              // Jika kebetulan ada nama di history tapi tidak ada di data master
               techJobCounts[h.nama] = { 
                   total: 1, 
                   selesai: h.status.toLowerCase() === 'selesai' ? 1 : 0, 
@@ -583,15 +558,12 @@
           }
       });
 
-      // Jadikan array dan urutkan dari terbanyak ke 0
       let sortedTechs = Object.keys(techJobCounts).map(name => {
           return { nama: name, ...techJobCounts[name] };
       }).sort((a, b) => b.total - a.total);
 
 
-      // 4. Render HTML Ringkasan Berdasarkan Rentang Waktu
       container.innerHTML = `
-        <!-- Baris Atas: 3 Kotak Metrik -->
         <div class="col-md-4">
            <div class="card-produk p-4 text-center">
              <h5 class="fw-bold text-muted mb-3">Total Pekerjaan</h5>
@@ -638,12 +610,9 @@
            </div>
         </div>
 
-        <!-- Baris Bawah: Tabel Leaderboard Pekerjaan Teknisi -->
         <div class="col-12 mt-2">
            <div class="card-produk p-4">
              <h5 class="fw-bold text-muted mb-3">🏅 Rekap Pekerjaan Per Teknisi</h5>
-             
-             <!-- Bungkus tabel untuk scroll -->
              <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                <table class="table table-hover table-sm align-middle mb-0">
                  <thead style="position: sticky; top: 0; background-color: #f8fafc; z-index: 1;">
@@ -674,7 +643,6 @@
                  </tbody>
                </table>
              </div>
-             
            </div>
         </div>
       `;
