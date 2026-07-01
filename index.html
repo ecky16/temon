@@ -286,8 +286,6 @@
     }
 
     // RENDER KARTU TAB LIVE & UPDATE SUMMARY
-    // RENDER KARTU TAB LIVE & UPDATE SUMMARY
-    // RENDER KARTU TAB LIVE & UPDATE SUMMARY
    // RENDER KARTU TAB LIVE & UPDATE SUMMARY
     function renderCards(data) {
       
@@ -295,33 +293,33 @@
       let tMasuk = 0, tShift2 = 0, tLibur = 0, tCuti = 0, tBantek = 0, tProg = 0, tIdle = 0;
       
       data.forEach(item => {
-        // [PERBAIKAN] Bersihkan spasi dan jadikan huruf besar semua untuk mempermudah pengecekan
         let jdw = item.jadwal ? item.jadwal.toString().trim().toUpperCase() : "";
         let stat = item.status ? item.status.toString().trim().toUpperCase() : "";
         
-        let isLibur = jdw === "LIBUR";
-        let isPiket = jdw === "PIKET" || jdw === "SHIFT 2";
-        let isCuti = jdw === "C" || jdw === "CUTI";
-        let isBantek = jdw === "B" || jdw === "BANTEK";
+        // Jaring Deteksi Super Ketat: Cek di jadwal maupun di status
+        let isLibur = jdw.includes("LIBUR") || stat.includes("LIBUR");
+        let isPiket = jdw.includes("PIKET") || jdw.includes("SHIFT 2");
+        let isCuti = jdw === "C" || jdw.includes("CUTI") || stat === "C" || stat.includes("CUTI");
+        let isBantek = jdw === "B" || jdw.includes("BANTEK") || stat === "B" || stat.includes("BANTEK");
         
         // 1. Hitung Jadwal Kehadiran
         if (isLibur) {
             tLibur++;
-        } else if (isPiket) {
-            tShift2++;
         } else if (isCuti) {
             tCuti++;
         } else if (isBantek) {
-            tBantek++;
+            tBantek++; // Pasti masuk sini kalau B / Bantek
+        } else if (isPiket) {
+            tShift2++;
         } else {
-            tMasuk++;
+            tMasuk++; // Bantek tidak akan nyasar jadi "Masuk" lagi
         }
 
         // 2. Hitung Status Pekerjaan
         if (stat === 'PROGRESS') {
             tProg++;
-        } else if (stat === 'IDLE' && !isLibur && !isCuti) {
-            // Cuti dan Libur TIDAK dihitung sebagai Idle
+        } else if (stat === 'IDLE' && !isLibur && !isCuti && !isBantek) {
+            // Bantek, Cuti, dan Libur DILARANG masuk hitungan Idle
             tIdle++;
         }
       });
@@ -343,13 +341,12 @@
       
       data.sort((a, b) => {
         let jdwA = a.jadwal ? a.jadwal.toString().trim().toUpperCase() : "";
-        let jdwB = b.jadwal ? b.jadwal.toString().trim().toUpperCase() : "";
         let statA = a.status ? a.status.toString().trim().toUpperCase() : "";
+        let isA_Off = jdwA.includes('LIBUR') || jdwA === 'C' || jdwA.includes('CUTI') || statA.includes('LIBUR') || statA === 'C' || statA.includes('CUTI');
+        
+        let jdwB = b.jadwal ? b.jadwal.toString().trim().toUpperCase() : "";
         let statB = b.status ? b.status.toString().trim().toUpperCase() : "";
-
-        // Yang Libur atau Cuti otomatis ditaruh paling bawah
-        let isA_Off = (jdwA === 'LIBUR' || jdwA === 'C' || jdwA === 'CUTI');
-        let isB_Off = (jdwB === 'LIBUR' || jdwB === 'C' || jdwB === 'CUTI');
+        let isB_Off = jdwB.includes('LIBUR') || jdwB === 'C' || jdwB.includes('CUTI') || statB.includes('LIBUR') || statB === 'C' || statB.includes('CUTI');
         
         let rankA = statA === 'PROGRESS' ? 1 : (isA_Off ? 3 : 2);
         let rankB = statB === 'PROGRESS' ? 1 : (isB_Off ? 3 : 2);
@@ -360,16 +357,17 @@
         let jdw = item.jadwal ? item.jadwal.toString().trim().toUpperCase() : "";
         let stat = item.status ? item.status.toString().trim().toUpperCase() : "";
 
-        var isIdle = stat === "IDLE";
-        var isLibur = jdw === "LIBUR";
-        var isPiket = jdw === "PIKET" || jdw === "SHIFT 2";
-        var isCuti = jdw === "C" || jdw === "CUTI";
-        var isBantek = jdw === "B" || jdw === "BANTEK";
+        let isLibur = jdw.includes("LIBUR") || stat.includes("LIBUR");
+        let isPiket = jdw.includes("PIKET") || jdw.includes("SHIFT 2");
+        let isCuti = jdw === "C" || jdw.includes("CUTI") || stat === "C" || stat.includes("CUTI");
+        let isBantek = jdw === "B" || jdw.includes("BANTEK") || stat === "B" || stat.includes("BANTEK");
         
+        var isIdle = stat === "IDLE";
         var badgeClass = isIdle ? "bg-idle" : "bg-working pulse-working"; 
         var indicatorColor = isIdle ? "#198754" : "#dc3545";
         var textStatus = item.status ? item.status.toUpperCase() : "-";
 
+        // OVERRIDE TAMPILAN STATUS JIKA DIA CUTI / BANTEK / LIBUR
         if (isLibur && isIdle) {
             badgeClass = "bg-libur";
             indicatorColor = "#f59e0b";
@@ -378,10 +376,14 @@
             badgeClass = "bg-secondary text-white";
             indicatorColor = "#6c757d";
             textStatus = "CUTI";
+        } else if (isBantek && isIdle) {
+            badgeClass = "bg-info text-dark"; // Badge status jadi Biru Terang
+            indicatorColor = "#0dcaf0";
+            textStatus = "BANTEK";
         }
         
         var jadwalBadgeClass = "bg-primary";
-        var teksJadwal = item.jadwal; // Tetap simpan teks aslinya
+        var teksJadwal = item.jadwal || "-"; 
         
         if (isLibur) {
           jadwalBadgeClass = "bg-warning text-dark";
