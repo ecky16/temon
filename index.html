@@ -287,29 +287,36 @@
 
     // RENDER KARTU TAB LIVE & UPDATE SUMMARY
     // RENDER KARTU TAB LIVE & UPDATE SUMMARY
+    // RENDER KARTU TAB LIVE & UPDATE SUMMARY
     function renderCards(data) {
       
       // MENGHITUNG DATA SUMMARY
-      let tMasuk = 0, tShift2 = 0, tLibur = 0, tProg = 0, tIdle = 0;
+      let tMasuk = 0, tShift2 = 0, tLibur = 0, tCuti = 0, tBantek = 0, tProg = 0, tIdle = 0;
       
       data.forEach(item => {
         let isLibur = item.jadwal === "Libur";
-        let isPiket = item.jadwal === "Piket";
+        let isPiket = item.jadwal === "Piket" || item.jadwal === "Shift 2";
+        let isCuti = item.jadwal === "C" || item.jadwal === "Cuti";
+        let isBantek = item.jadwal === "B" || item.jadwal === "Bantek";
         
         // 1. Hitung Jadwal Kehadiran
         if (isLibur) {
             tLibur++;
         } else if (isPiket) {
             tShift2++;
+        } else if (isCuti) {
+            tCuti++;
+        } else if (isBantek) {
+            tBantek++;
         } else {
             tMasuk++;
         }
 
-        // 2. Hitung Status Pekerjaan (PERBAIKAN DI SINI)
+        // 2. Hitung Status Pekerjaan
         if (item.status === 'Progress') {
             tProg++;
-        } else if (item.status === 'Idle' && !isLibur) {
-            // Hitung Idle HANYA jika statusnya Idle DAN teknisi tidak sedang libur
+        } else if (item.status === 'Idle' && !isLibur && !isCuti) {
+            // Cuti dan Libur TIDAK dihitung sebagai Idle
             tIdle++;
         }
       });
@@ -318,6 +325,9 @@
       document.getElementById('sum-masuk').innerText = tMasuk;
       document.getElementById('sum-shift2').innerText = tShift2;
       document.getElementById('sum-libur').innerText = tLibur;
+      document.getElementById('sum-cuti').innerText = tCuti;
+      document.getElementById('sum-bantek').innerText = tBantek;
+      
       document.getElementById('sum-progress').innerText = tProg;
       document.getElementById('sum-idle').innerText = tIdle;
       document.getElementById('sum-total').innerText = data.length;
@@ -327,31 +337,49 @@
       container.innerHTML = '';
       
       data.sort((a, b) => {
-        let rankA = a.status === 'Progress' ? 1 : (a.jadwal === 'Libur' ? 3 : 2);
-        let rankB = b.status === 'Progress' ? 1 : (b.jadwal === 'Libur' ? 3 : 2);
+        // Yang Libur atau Cuti otomatis ditaruh paling bawah
+        let isA_Off = (a.jadwal === 'Libur' || a.jadwal === 'C' || a.jadwal === 'Cuti');
+        let isB_Off = (b.jadwal === 'Libur' || b.jadwal === 'C' || b.jadwal === 'Cuti');
+        let rankA = a.status === 'Progress' ? 1 : (isA_Off ? 3 : 2);
+        let rankB = b.status === 'Progress' ? 1 : (isB_Off ? 3 : 2);
         return rankA - rankB;
       });
 
       data.forEach(function(item) {
         var isIdle = item.status === "Idle";
         var isLibur = item.jadwal === "Libur";
-        var isPiket = item.jadwal === "Piket"; 
+        var isPiket = item.jadwal === "Piket" || item.jadwal === "Shift 2";
+        var isCuti = item.jadwal === "C" || item.jadwal === "Cuti";
+        var isBantek = item.jadwal === "B" || item.jadwal === "Bantek";
         
         var badgeClass = isIdle ? "bg-idle" : "bg-working pulse-working"; 
         var indicatorColor = isIdle ? "#198754" : "#dc3545";
         var textStatus = item.status.toUpperCase();
 
-        if(isLibur && isIdle) {
+        if (isLibur && isIdle) {
             badgeClass = "bg-libur";
             indicatorColor = "#f59e0b";
             textStatus = "LIBUR";
+        } else if (isCuti && isIdle) {
+            badgeClass = "bg-secondary text-white";
+            indicatorColor = "#6c757d";
+            textStatus = "CUTI";
         }
         
         var jadwalBadgeClass = "bg-primary";
+        var teksJadwal = item.jadwal;
+        
         if (isLibur) {
           jadwalBadgeClass = "bg-warning text-dark";
         } else if (isPiket) {
           jadwalBadgeClass = "bg-piket-jadwal";
+          teksJadwal = "⏱️ Shift 2";
+        } else if (isCuti) {
+          jadwalBadgeClass = "bg-secondary";
+          teksJadwal = "✈️ Cuti (C)";
+        } else if (isBantek) {
+          jadwalBadgeClass = "bg-info text-dark";
+          teksJadwal = "🤝 Bantek (B)";
         }
         
         var cardHtml = `
@@ -364,7 +392,7 @@
                     <h6 class="card-title fw-bold mb-0 text-dark">${item.nama}</h6>
                     <small class="text-muted" style="font-size:0.75rem;">NIK: ${item.nik} | SA: <b>${item.sa || '-'}</b></small>
                     <div class="mt-1">
-                      <span class="badge ${jadwalBadgeClass}">${isPiket ? '⏱️ Piket (Shift 2)' : item.jadwal}</span>
+                      <span class="badge ${jadwalBadgeClass}">${teksJadwal}</span>
                     </div>
                   </div>
                   <span class="status-badge ${badgeClass}">${textStatus}</span>
@@ -387,8 +415,8 @@
                     </div>
                   ` : `
                     <div class="idle-box text-center text-muted">
-                      <span style="font-size: 1.5rem;">${isLibur ? '🏖️' : (isPiket ? '🌙' : '☕')}</span><br>
-                      <small class="fw-medium">${isLibur ? 'Sedang libur tugas' : (isPiket ? 'Standby Shift 2 (Jam 13.00)' : 'Siap menerima order baru')}</small>
+                      <span style="font-size: 1.5rem;">${isLibur ? '🏖️' : (isCuti ? '✈️' : (isPiket ? '🌙' : (isBantek ? '🤝' : '☕')))}</span><br>
+                      <small class="fw-medium">${isLibur ? 'Sedang libur tugas' : (isCuti ? 'Sedang menikmati cuti' : (isPiket ? 'Standby Shift 2 (Jam 13.00)' : (isBantek ? 'Standby perbantuan teknis (Bantek)' : 'Siap menerima order baru')))}</small>
                     </div>
                   `}
                 </div>
