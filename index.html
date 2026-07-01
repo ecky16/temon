@@ -495,6 +495,21 @@
          return;
       }
 
+      // ==========================================
+      // FITUR BARU: SORTING PROGRESS KE ATAS
+      // ==========================================
+      filtered.sort((a, b) => {
+        let statA = (a.status || "").toString().trim().toLowerCase();
+        let statB = (b.status || "").toString().trim().toLowerCase();
+        
+        // Jika statusnya 'selesai', taruh di rank 2. Selain itu (termasuk progress), rank 1.
+        let rankA = statA === 'selesai' ? 2 : 1;
+        let rankB = statB === 'selesai' ? 2 : 1;
+        
+        return rankA - rankB;
+      });
+      // ==========================================
+
       tbody.innerHTML = filtered.map(h => `
         <tr>
           <td class="fw-bold text-dark" style="max-width: 150px; font-size: 0.85rem; white-space: normal; word-wrap: break-word;">${h.nama}</td>
@@ -518,7 +533,6 @@
       `).join('');
       document.getElementById('content-history').classList.remove('d-none');
     }
-
    // RENDER TAB PRODUKTIVITAS DENGAN RENTANG TANGGAL
     function renderProduktivitas() {
       const start = document.getElementById('start-date').value;
