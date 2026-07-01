@@ -86,6 +86,7 @@
       </div>
     </div>
 
+    <!-- FILTER AREA -->
     <div class="card p-3 border-0 shadow-sm mb-4" style="border-radius: 16px; background: #ffffff;">
       <div class="row g-3 align-items-end">
         <div class="col-md-3">
@@ -125,9 +126,11 @@
       <h5 class="mt-3 fw-semibold text-muted" id="loader-text">Sinkronisasi Data...</h5>
     </div>
 
+    <!-- AREA LIVE MONITORING -->
     <div id="content-live" class="d-none">
       
-      <div class="row g-3 mb-4">
+      <!-- KOTAK SUMMARY STATS (HANYA MUNCUL DI LIVE TAB) -->
+     <div class="row g-3 mb-4">
         <div class="col-md-6">
           <div class="card border-0 shadow-sm" style="border-radius: 12px; height: 100%;">
             <div class="card-body p-3">
@@ -173,10 +176,13 @@
           </div>
         </div>
       </div>
+      <!-- END KOTAK SUMMARY STATS -->
 
+      <!-- TEMPAT KARTU DI RENDER -->
       <div id="container-teknisi" class="row g-4"></div>
     </div>
 
+    <!-- AREA HISTORY -->
     <div id="content-history" class="d-none">
       <div class="card p-3 border-0 shadow-sm" style="border-radius: 16px;">
         <div class="table-responsive">
@@ -199,6 +205,7 @@
       </div>
     </div>
 
+    <!-- AREA PRODUKTIVITAS -->
     <div id="content-produk" class="d-none">
       <div class="row g-4" id="container-produk">
       </div>
@@ -222,6 +229,7 @@
       document.getElementById('content-history').classList.toggle('d-none', tab !== 'history');
       document.getElementById('content-produk').classList.toggle('d-none', tab !== 'produk');
       
+      // Sembunyikan input tanggal jika di tab Live
       document.getElementById('div-start-date').style.visibility = tab === 'live' ? 'hidden' : 'visible';
       document.getElementById('div-end-date').style.visibility = tab === 'live' ? 'hidden' : 'visible';
 
@@ -277,17 +285,23 @@
       }
     }
 
-    // RENDER KARTU TAB LIVE (DENGAN JARING KETAT)
+    // RENDER KARTU TAB LIVE & UPDATE SUMMARY
+// RENDER KARTU TAB LIVE & UPDATE SUMMARY
     function renderCards(data) {
       
       let tMasuk = 0, tShift2 = 0, tLibur = 0, tCuti = 0, tBantek = 0, tProg = 0, tIdle = 0;
       
       data.forEach(item => {
-        let jdw = item.jadwal ? item.jadwal.toString().trim().toUpperCase() : "";
-        let stat = item.status ? item.status.toString().trim().toUpperCase() : "";
+        // [PERBAIKAN] Cek variabel absensi DAN jadwal agar tidak ada yang lolos
+        let jdwRaw = item.absensi || item.jadwal || "";
+        let statRaw = item.status || "";
+
+        let jdw = jdwRaw.toString().trim().toUpperCase();
+        let stat = statRaw.toString().trim().toUpperCase();
         
         let isLibur = jdw.includes("LIBUR") || stat.includes("LIBUR");
-        let isPiket = jdw.includes("PIKET") || jdw.includes("SHIFT 2");
+        // Deteksi "P" otomatis masuk ke Piket/Shift 2
+        let isPiket = jdw.includes("PIKET") || jdw.includes("SHIFT 2") || jdw === "P"; 
         let isCuti = jdw === "C" || jdw.includes("CUTI") || stat === "C" || stat.includes("CUTI");
         let isBantek = jdw === "B" || jdw.includes("BANTEK") || stat === "B" || stat.includes("BANTEK");
         
@@ -324,12 +338,12 @@
       container.innerHTML = '';
       
       data.sort((a, b) => {
-        let jdwA = a.jadwal ? a.jadwal.toString().trim().toUpperCase() : "";
-        let statA = a.status ? a.status.toString().trim().toUpperCase() : "";
+        let jdwA = (a.absensi || a.jadwal || "").toString().trim().toUpperCase();
+        let statA = (a.status || "").toString().trim().toUpperCase();
         let isA_Off = jdwA.includes('LIBUR') || jdwA === 'C' || jdwA.includes('CUTI') || statA.includes('LIBUR') || statA === 'C' || statA.includes('CUTI');
         
-        let jdwB = b.jadwal ? b.jadwal.toString().trim().toUpperCase() : "";
-        let statB = b.status ? b.status.toString().trim().toUpperCase() : "";
+        let jdwB = (b.absensi || b.jadwal || "").toString().trim().toUpperCase();
+        let statB = (b.status || "").toString().trim().toUpperCase();
         let isB_Off = jdwB.includes('LIBUR') || jdwB === 'C' || jdwB.includes('CUTI') || statB.includes('LIBUR') || statB === 'C' || statB.includes('CUTI');
         
         let rankA = statA === 'PROGRESS' ? 1 : (isA_Off ? 3 : 2);
@@ -338,11 +352,12 @@
       });
 
       data.forEach(function(item) {
-        let jdw = item.jadwal ? item.jadwal.toString().trim().toUpperCase() : "";
-        let stat = item.status ? item.status.toString().trim().toUpperCase() : "";
+        let jdwRaw = item.absensi || item.jadwal || "";
+        let jdw = jdwRaw.toString().trim().toUpperCase();
+        let stat = (item.status || "").toString().trim().toUpperCase();
 
         let isLibur = jdw.includes("LIBUR") || stat.includes("LIBUR");
-        let isPiket = jdw.includes("PIKET") || jdw.includes("SHIFT 2");
+        let isPiket = jdw.includes("PIKET") || jdw.includes("SHIFT 2") || jdw === "P";
         let isCuti = jdw === "C" || jdw.includes("CUTI") || stat === "C" || stat.includes("CUTI");
         let isBantek = jdw === "B" || jdw.includes("BANTEK") || stat === "B" || stat.includes("BANTEK");
         
@@ -366,7 +381,7 @@
         }
         
         var jadwalBadgeClass = "bg-primary";
-        var teksJadwal = item.jadwal || "-"; 
+        var teksJadwal = jdwRaw || "-"; 
         
         if (isLibur) {
           jadwalBadgeClass = "bg-warning text-dark";
@@ -415,7 +430,7 @@
                   ` : `
                     <div class="idle-box text-center text-muted">
                       <span style="font-size: 1.5rem;">${isLibur ? '🏖️' : (isCuti ? '✈️' : (isPiket ? '🌙' : (isBantek ? '🤝' : '☕')))}</span><br>
-                      <small class="fw-medium">${isLibur ? 'Sedang libur tugas' : (isCuti ? 'Sedang menikmati cuti' : (isPiket ? 'Standby Shift 2 (Jam 13.00)' : (isBantek ? 'Standby perbantuan teknis (Bantek)' : 'Siap menerima order baru')))}</small>
+                      <small class="fw-medium">${isLibur ? 'Sedang libur tugas' : (isCuti ? 'Sedang menikmati cuti' : (isPiket ? 'Standby Shift 2 / Piket' : (isBantek ? 'Standby perbantuan teknis (Bantek)' : 'Siap menerima order baru')))}</small>
                     </div>
                   `}
                 </div>
@@ -501,6 +516,7 @@
       document.getElementById('content-history').classList.remove('d-none');
     }
 
+   // RENDER TAB PRODUKTIVITAS DENGAN RENTANG TANGGAL
     function renderProduktivitas() {
       const start = document.getElementById('start-date').value;
       const end = document.getElementById('end-date').value;
@@ -509,6 +525,7 @@
       
       if (!start || !end) return;
 
+      // 1. Filter Data Historis Sesuai Rentang Tanggal dan SA
       let filtered = historyData.filter(h => isDateInRange(h.tanggal, start, end));
       if (selectedSA !== 'ALL') {
          filtered = filtered.filter(h => {
@@ -517,6 +534,7 @@
          });
       }
 
+      // 2. Olah Data Metrik Kelompok Rentang
       let totalOrder = filtered.length;
       let orderSelesai = filtered.filter(h => h.status.toLowerCase() === 'selesai').length;
       let orderProgress = totalOrder - orderSelesai;
@@ -531,16 +549,20 @@
       });
       let sortedSto = Object.entries(stoCounts).sort((a,b) => b[1] - a[1]);
 
+      // 3. Olah Data Pekerjaan Per Teknisi (Leaderboard)
+      // Ambil daftar semua teknisi sesuai filter SA (agar yang 0 pekerjaan tetap muncul)
       let baseTechs = dashboardDataFull;
       if (selectedSA !== 'ALL') {
           baseTechs = baseTechs.filter(t => t.sa === selectedSA);
       }
 
       let techJobCounts = {};
+      // Inisialisasi semua teknisi dengan 0 pekerjaan terlebih dahulu
       baseTechs.forEach(t => {
           techJobCounts[t.nama] = { total: 0, selesai: 0, progress: 0 };
       });
 
+      // Hitung pekerjaan dari data historis
       filtered.forEach(h => {
           if (techJobCounts[h.nama]) {
               techJobCounts[h.nama].total++;
@@ -550,6 +572,7 @@
                   techJobCounts[h.nama].progress++;
               }
           } else {
+              // Jika kebetulan ada nama di history tapi tidak ada di data master
               techJobCounts[h.nama] = { 
                   total: 1, 
                   selesai: h.status.toLowerCase() === 'selesai' ? 1 : 0, 
@@ -558,12 +581,15 @@
           }
       });
 
+      // Jadikan array dan urutkan dari terbanyak ke 0
       let sortedTechs = Object.keys(techJobCounts).map(name => {
           return { nama: name, ...techJobCounts[name] };
       }).sort((a, b) => b.total - a.total);
 
 
+      // 4. Render HTML Ringkasan Berdasarkan Rentang Waktu
       container.innerHTML = `
+        <!-- Baris Atas: 3 Kotak Metrik -->
         <div class="col-md-4">
            <div class="card-produk p-4 text-center">
              <h5 class="fw-bold text-muted mb-3">Total Pekerjaan</h5>
@@ -610,9 +636,12 @@
            </div>
         </div>
 
+        <!-- Baris Bawah: Tabel Leaderboard Pekerjaan Teknisi -->
         <div class="col-12 mt-2">
            <div class="card-produk p-4">
              <h5 class="fw-bold text-muted mb-3">🏅 Rekap Pekerjaan Per Teknisi</h5>
+             
+             <!-- Bungkus tabel untuk scroll -->
              <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                <table class="table table-hover table-sm align-middle mb-0">
                  <thead style="position: sticky; top: 0; background-color: #f8fafc; z-index: 1;">
@@ -643,6 +672,7 @@
                  </tbody>
                </table>
              </div>
+             
            </div>
         </div>
       `;
