@@ -337,14 +337,16 @@
       var container = document.getElementById('container-teknisi');
       container.innerHTML = '';
       
-      data.sort((a, b) => {
+     data.sort((a, b) => {
         let jdwA = (a.absensi || a.jadwal || "").toString().trim().toUpperCase();
         let statA = (a.status || "").toString().trim().toUpperCase();
-        let isA_Off = jdwA.includes('LIBUR') || jdwA === 'C' || jdwA.includes('CUTI') || statA.includes('LIBUR') || statA === 'C' || statA.includes('CUTI');
+        
+        // Tambahkan isCuti dan isBantek ke deteksi "Off"
+        let isA_Off = jdwA.includes('LIBUR') || jdwA === 'C' || jdwA.includes('CUTI') || jdwA === 'B' || jdwA.includes('BANTEK');
         
         let jdwB = (b.absensi || b.jadwal || "").toString().trim().toUpperCase();
         let statB = (b.status || "").toString().trim().toUpperCase();
-        let isB_Off = jdwB.includes('LIBUR') || jdwB === 'C' || jdwB.includes('CUTI') || statB.includes('LIBUR') || statB === 'C' || statB.includes('CUTI');
+        let isB_Off = jdwB.includes('LIBUR') || jdwB === 'C' || jdwB.includes('CUTI') || jdwB === 'B' || jdwB.includes('BANTEK');
         
         let rankA = statA === 'PROGRESS' ? 1 : (isA_Off ? 3 : 2);
         let rankB = statB === 'PROGRESS' ? 1 : (isB_Off ? 3 : 2);
