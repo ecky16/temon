@@ -5,6 +5,7 @@
   <title>Dashboard TeMon</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     /* Import Font Poppins */
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
@@ -124,6 +125,12 @@
         <div class="col-md-3 text-end d-md-none">
           <button onclick="refreshCurrentTab()" class="btn btn-danger btn-sm w-100 fw-bold rounded-pill">🔄 Refresh Data</button>
         </div>
+        <div class="col-md-3 d-none" id="div-download-excel">
+          <label class="form-label d-none d-md-block">&nbsp;</label>
+          <button onclick="exportHistoryToExcel()" class="btn btn-success fw-bold shadow-sm w-100 d-flex align-items-center justify-content-center gap-2" style="border-radius: 10px; height: 38px; background-color: #198754; border-color: #198754;">
+            📊 Download Excel
+          </button>
+        </div>
       </div>
     </div>
 
@@ -238,7 +245,7 @@
     let dashboardDataFull = [];
 
     // Fungsi Pindah Tab
-   function switchTab(tab) {
+  function switchTab(tab) {
       currentTab = tab;
       document.getElementById('tab-live').classList.toggle('active', tab === 'live');
       document.getElementById('tab-history').classList.toggle('active', tab === 'history');
@@ -248,7 +255,7 @@
       document.getElementById('content-history').classList.toggle('d-none', tab !== 'history');
       document.getElementById('content-produk').classList.toggle('d-none', tab !== 'produk');
       
-      // PAKSA HAPUS SISA STYLE LAMA YANG BIKIN TRANSPARAN
+      // Paksa hapus sisa style lama yang bikin transparan
       document.getElementById('div-start-date').style.visibility = '';
       document.getElementById('div-end-date').style.visibility = '';
 
@@ -257,6 +264,9 @@
       document.getElementById('div-end-date').classList.toggle('d-none', tab === 'live');
       document.getElementById('div-search-tech').classList.toggle('d-none', tab !== 'live');
       document.getElementById('div-status-filter').classList.toggle('d-none', tab !== 'live');
+      
+      // [KONTROL BARU]: Tampilkan tombol excel HANYA di tab history
+      document.getElementById('div-download-excel').classList.toggle('d-none', tab !== 'history');
 
       if(tab === 'live') {
          if(dashboardDataFull.length === 0) loadData(); else applyGlobalFilter();
@@ -345,8 +355,73 @@
         document.getElementById('last-update').innerHTML = "Gagal memuat data!";
       }
     }
+// FUNGSI EKSPOR HISTORY KE EXCEL BESERTA FILTER NYA
+    function exportHistoryToExcel() {
+      const start = document.getElementById('start-date').value;
+      const end = document.getElementById('end-date').value;
+      const selectedSA = document.getElementById('sa-filter').value;
+      
+      if (!start || !end) {
+        alert('Silakan pilih rentang tanggal terlebih dahulu sebelum men-download!');
+        return;
+      }
 
-    // RENDER KARTU TAB LIVE & UPDATE SUMMARY
+      // Filter data mentah history sesuai dengan yang sedang tampil di layar
+      let filtered = historyData.filter(h => isDateInRange(h.tanggal, start, end));
+      
+      if (selectedSA !== 'ALL') {
+         filtered = filtered.filter(h => {
+             let tech = dashboardDataFull.find(t => t.nama === h.nama);
+             return tech && tech.sa === selectedSA;
+         });
+      }
+
+      if (filtered.length === 0) {
+        alert('Tidak ada data pekerjaan yang bisa di-download pada rentang tanggal ini.');
+        return;
+      }
+
+      // Urutkan data biar seragam (Progress paling atas, Selesai di bawahnya)
+      filtered.sort((a, b) => {
+        let statA = (a.status || "").toString().trim().toLowerCase();
+        let statB = (b.status || "").toString().trim().toLowerCase();
+        let rankA = statA === 'selesai' ? 2 : 1;
+        let rankB = statB === 'selesai' ? 2 : 1;
+        return rankA - rankB;
+      });
+
+      // Mapping ulang isi data agar format tabel Excel bersih dari tag-tag html/emoji
+      let dataUntukExcel = filtered.map((h, index) => {
+        return {
+          "No": index + 1,
+          "Tanggal": h.tanggal ? h.tanggal.substring(0, 10) : "-",
+          "Nama Teknisi": h.nama || "-",
+          "Pekerjaan Dikerjakan": h.pekerjaan || "-",
+          "STO": h.sto || "-",
+          "Partner / Tim Field": h.partner && h.partner !== '-' ? h.partner : "Sendiri (Solo)",
+          "Jam Mulai": h.jamMulai || "-",
+          "Jam Selesai": h.jamSelesai || "-",
+          "Durasi Kerja": h.durasi || "-",
+          "Status Akhir": (h.status || "Progress").toUpperCase()
+        };
+      });
+
+      // Proses cetak lembar kerja Excel menggunakan SheetJS
+      var worksheet = XLSX.utils.json_to_sheet(dataUntukExcel);
+      var workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Data History");
+
+      // Set lebar kolom otomatis sederhana biar teks tidak terpotong
+      const wscols = [
+        {wch: 5},  {wch: 12}, {wch: 30}, {wch: 35}, {wch: 10},
+        {wch: 25}, {wch: 12}, {wch: 12}, {wch: 15}, {wch: 15}
+      ];
+      worksheet['!cols'] = wscols;
+
+      // Jalankan perintah download browser otomatis
+      XLSX.writeFile(workbook, `Rekap_History_Pekerjaan_${start}_sd_${end}.xlsx`);
+    }
+    
 // RENDER KARTU TAB LIVE & UPDATE SUMMARY
     function renderCards(data) {
       
