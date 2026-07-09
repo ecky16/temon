@@ -89,20 +89,38 @@
     <!-- FILTER AREA -->
     <div class="card p-3 border-0 shadow-sm mb-4" style="border-radius: 16px; background: #ffffff;">
       <div class="row g-3 align-items-end">
+        
         <div class="col-md-3">
           <label class="form-label fw-bold text-muted small">📍 SERVICE AREA:</label>
           <select id="sa-filter" class="form-select border-danger fw-bold shadow-sm" style="border-radius: 10px;" onchange="applyGlobalFilter()">
             <option value="ALL">Semua Area</option>
           </select>
         </div>
-        <div class="col-md-3" id="div-start-date">
+        
+        <div class="col-md-3" id="div-search-tech">
+          <label class="form-label fw-bold text-muted small">🔍 CARI NAMA TEKNISI:</label>
+          <input type="text" id="search-tech" class="form-control border-danger fw-medium shadow-sm" style="border-radius: 10px;" placeholder="Ketik nama..." oninput="applyGlobalFilter()">
+        </div>
+        <div class="col-md-3" id="div-status-filter">
+          <label class="form-label fw-bold text-muted small">🚦 STATUS KERJA:</label>
+          <select id="status-filter" class="form-select border-danger fw-bold shadow-sm" style="border-radius: 10px;" onchange="applyGlobalFilter()">
+            <option value="ALL">Semua Status</option>
+            <option value="PROGRESS">🔥 On Progress</option>
+            <option value="IDLE">☕ Idle (Standby)</option>
+            <option value="BANTEK">🤝 Bantek</option>
+            <option value="OFF">🏖️ Libur / Cuti / Piket</option>
+          </select>
+        </div>
+
+        <div class="col-md-3 d-none" id="div-start-date">
           <label class="form-label fw-bold text-muted small">📅 TANGGAL MULAI:</label>
           <input type="date" id="start-date" class="form-control border-danger fw-medium shadow-sm" style="border-radius: 10px;" onchange="applyGlobalFilter()">
         </div>
-        <div class="col-md-3" id="div-end-date">
+        <div class="col-md-3 d-none" id="div-end-date">
           <label class="form-label fw-bold text-muted small">📅 TANGGAL SELESAI:</label>
           <input type="date" id="end-date" class="form-control border-danger fw-medium shadow-sm" style="border-radius: 10px;" onchange="applyGlobalFilter()">
         </div>
+        
         <div class="col-md-3 text-end d-md-none">
           <button onclick="refreshCurrentTab()" class="btn btn-danger btn-sm w-100 fw-bold rounded-pill">🔄 Refresh Data</button>
         </div>
@@ -231,8 +249,10 @@
       document.getElementById('content-produk').classList.toggle('d-none', tab !== 'produk');
       
       // Sembunyikan input tanggal jika di tab Live
-      document.getElementById('div-start-date').style.visibility = tab === 'live' ? 'hidden' : 'visible';
-      document.getElementById('div-end-date').style.visibility = tab === 'live' ? 'hidden' : 'visible';
+     document.getElementById('div-start-date').classList.toggle('d-none', tab === 'live');
+      document.getElementById('div-end-date').classList.toggle('d-none', tab === 'live');
+      document.getElementById('div-search-tech').classList.toggle('d-none', tab !== 'live');
+      document.getElementById('div-status-filter').classList.toggle('d-none', tab !== 'live');
 
       if(tab === 'live') {
          if(dashboardDataFull.length === 0) loadData(); else applyGlobalFilter();
@@ -263,7 +283,43 @@
     function applyGlobalFilter() {
        if(currentTab === 'live') {
           const selectedSA = document.getElementById('sa-filter').value;
-          const filtered = selectedSA === 'ALL' ? dashboardDataFull : dashboardDataFull.filter(d => d.sa === selectedSA);
+          const searchText = document.getElementById('search-tech').value.toLowerCase();
+          const statusFilter = document.getElementById('status-filter').value;
+
+          let filtered = dashboardDataFull;
+          
+          // Filter 1: Service Area
+          if(selectedSA !== 'ALL') {
+             filtered = filtered.filter(d => d.sa === selectedSA);
+          }
+
+          // Filter 2: Pencarian Nama (Real-time ngetik langsung berubah)
+          if(searchText) {
+             filtered = filtered.filter(d => d.nama.toLowerCase().includes(searchText));
+          }
+
+          // Filter 3: Dropdown Status
+          if(statusFilter !== 'ALL') {
+             filtered = filtered.filter(d => {
+                let jdwRaw = d.absensi || d.jadwal || "";
+                let statRaw = d.status || "";
+                let jdw = jdwRaw.toString().trim().toUpperCase();
+                let stat = statRaw.toString().trim().toUpperCase();
+
+                let isLibur = jdw.includes("LIBUR") || stat.includes("LIBUR");
+                let isPiket = jdw.includes("PIKET") || jdw.includes("SHIFT 2") || jdw === "P";
+                let isCuti = jdw === "C" || jdw.includes("CUTI") || stat === "C" || stat.includes("CUTI");
+                let isBantek = jdw === "B" || jdw.includes("BANTEK") || stat === "B" || stat.includes("BANTEK");
+
+                let actualStatus = 'IDLE';
+                if (stat === 'PROGRESS') actualStatus = 'PROGRESS';
+                else if (isBantek) actualStatus = 'BANTEK';
+                else if (isLibur || isCuti || isPiket) actualStatus = 'OFF';
+
+                return actualStatus === statusFilter;
+             });
+          }
+          
           renderCards(filtered);
        } else if (currentTab === 'history') {
           filterHistory(); 
