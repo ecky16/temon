@@ -533,8 +533,7 @@
       `).join('');
       document.getElementById('content-history').classList.remove('d-none');
     }
-   // RENDER TAB PRODUKTIVITAS DENGAN RENTANG TANGGAL
-    // RENDER TAB PRODUKTIVITAS DENGAN KETERANGAN STATUS KHUSUS
+   // RENDER TAB PRODUKTIVITAS DENGAN KETERANGAN STATUS KHUSUS & HITUNGAN PARTNER
     function renderProduktivitas() {
       const start = document.getElementById('start-date').value;
       const end = document.getElementById('end-date').value;
@@ -548,7 +547,9 @@
       if (selectedSA !== 'ALL') {
          filtered = filtered.filter(h => {
              let tech = dashboardDataFull.find(t => t.nama === h.nama);
-             return tech && tech.sa === selectedSA;
+             let partnerTech = dashboardDataFull.find(t => t.nama === h.partner);
+             // Tampilkan pekerjaan jika Teknisi Utama ATAU Partner ada di area SA yang difilter
+             return (tech && tech.sa === selectedSA) || (partnerTech && partnerTech.sa === selectedSA);
          });
       }
 
@@ -576,7 +577,6 @@
       let techJobCounts = {};
       // Inisialisasi data teknisi beserta status jadwalnya saat ini
       baseTechs.forEach(t => {
-          // Normalisasi string jadwal absensi
           let jdwRaw = t.absensi || t.jadwal || "";
           let jdw = jdwRaw.toString().trim().toUpperCase();
 
@@ -584,12 +584,13 @@
               total: 0, 
               selesai: 0, 
               progress: 0,
-              jadwalStatus: jdw // Simpan status jadwal absensinya di sini
+              jadwalStatus: jdw
           };
       });
 
-      // Hitung pekerjaan dari data historis
+      // 4. Hitung Pekerjaan dari Data Historis (UTAMA & PARTNER)
       filtered.forEach(h => {
+          // --- A. TAMBAH POIN UNTUK TEKNISI UTAMA ---
           if (techJobCounts[h.nama]) {
               techJobCounts[h.nama].total++;
               if (h.status.toLowerCase() === 'selesai') {
@@ -598,13 +599,32 @@
                   techJobCounts[h.nama].progress++;
               }
           } else {
-              // Cadangan jika ada nama di history tapi tidak terdaftar di data master teknisi
               techJobCounts[h.nama] = { 
                   total: 1, 
                   selesai: h.status.toLowerCase() === 'selesai' ? 1 : 0, 
                   progress: h.status.toLowerCase() !== 'selesai' ? 1 : 0,
                   jadwalStatus: "MASUK"
               };
+          }
+
+          // --- B. TAMBAH POIN UNTUK PARTNER (JIKA ADA) ---
+          if (h.partner && h.partner !== '-' && h.partner.trim() !== '') {
+              let pName = h.partner.trim();
+              if (techJobCounts[pName]) {
+                  techJobCounts[pName].total++;
+                  if (h.status.toLowerCase() === 'selesai') {
+                      techJobCounts[pName].selesai++;
+                  } else {
+                      techJobCounts[pName].progress++;
+                  }
+              } else {
+                  techJobCounts[pName] = { 
+                      total: 1, 
+                      selesai: h.status.toLowerCase() === 'selesai' ? 1 : 0, 
+                      progress: h.status.toLowerCase() !== 'selesai' ? 1 : 0,
+                      jadwalStatus: "MASUK"
+                  };
+              }
           }
       });
 
@@ -614,7 +634,7 @@
       }).sort((a, b) => b.total - a.total);
 
 
-      // 4. Render HTML
+      // 5. Render HTML
       container.innerHTML = `
         <div class="col-md-4">
            <div class="card-produk p-4 text-center">
@@ -680,14 +700,12 @@
                      let rincianHtml = "";
 
                      if (t.total > 0) {
-                         // Jika ada tiket, tampilkan rincian Selesai dan Progress
                          rincianHtml = `
                            <span class="text-success fw-bold me-2">✅ ${t.selesai}</span> 
                            <span class="text-muted">|</span> 
                            <span class="text-danger fw-bold ms-2">⏳ ${t.progress}</span>
                          `;
                      } else {
-                         // [FITUR BARU] Jika 0 tiket, cek status dari jadwal absensinya
                          let js = t.jadwalStatus;
                          if (js.includes("LIBUR")) {
                              rincianHtml = `<span class="badge bg-warning text-dark px-2 py-1">🏖️ Libur</span>`;
