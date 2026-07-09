@@ -238,7 +238,7 @@
     let dashboardDataFull = [];
 
     // Fungsi Pindah Tab
-    function switchTab(tab) {
+   function switchTab(tab) {
       currentTab = tab;
       document.getElementById('tab-live').classList.toggle('active', tab === 'live');
       document.getElementById('tab-history').classList.toggle('active', tab === 'history');
@@ -248,8 +248,12 @@
       document.getElementById('content-history').classList.toggle('d-none', tab !== 'history');
       document.getElementById('content-produk').classList.toggle('d-none', tab !== 'produk');
       
-      // Sembunyikan input tanggal jika di tab Live
-     document.getElementById('div-start-date').classList.toggle('d-none', tab === 'live');
+      // PAKSA HAPUS SISA STYLE LAMA YANG BIKIN TRANSPARAN
+      document.getElementById('div-start-date').style.visibility = '';
+      document.getElementById('div-end-date').style.visibility = '';
+
+      // Tampilkan/Sembunyikan Widget Sesuai Tab
+      document.getElementById('div-start-date').classList.toggle('d-none', tab === 'live');
       document.getElementById('div-end-date').classList.toggle('d-none', tab === 'live');
       document.getElementById('div-search-tech').classList.toggle('d-none', tab !== 'live');
       document.getElementById('div-status-filter').classList.toggle('d-none', tab !== 'live');
@@ -802,13 +806,7 @@
       document.getElementById('last-update').innerHTML = "Update terakhir: " + ts;
     }
 
-    window.onload = function() {
-      document.getElementById('div-start-date').style.visibility = 'hidden';
-      document.getElementById('div-end-date').style.visibility = 'hidden';
-      loadData();
-      
-      setInterval(() => { if(currentTab === 'live') loadData(); }, 30000); 
-    };
+   
   </script>
    <footer style="text-align: right; padding: 12px 24px 16px; font-size: 0.72rem; color: #030c17; font-family: 'Poppins', sans-serif;">
       &copy;rakhmat_06/2026
