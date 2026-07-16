@@ -279,6 +279,9 @@
               <option value="Pasuruan">Pasuruan</option>
               <option value="Lumajang">Lumajang</option>
             </select>
+            <!-- INI TAMBAHAN FILTER TANGGALNYA -->
+            <input type="date" id="pbs-date-filter" class="pbs-input m-0" style="width: auto;">
+            
             <button class="pbs-btn m-0" style="width: auto; background: #1976d2;" onclick="loadPbsData()">Tampilkan Data</button>
           </div>
           <div class="table-responsive">
@@ -972,9 +975,15 @@
       tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4">Menarik data dari database...</td></tr>';
       
       try {
-        // Asumsi endpoint baru di backend Apps Script untuk PBS
-        const urlGas = "https://script.google.com/macros/s/AKfycbxP3XhjIy9wBLEteEZH-sGAA2LHaJXHl60qYU5qghGlm20FiYRg4WJz4QPaB89OwUVCvQ/exec" + "?action=getPbs&area=" + encodeURIComponent(area);
-        const response = await fetch(urlGas);
+        // Ambil nilai tanggal dari form, jika kosong biarkan agar GAS menggunakan Hari Ini
+      const targetDate = document.getElementById("pbs-date-filter").value; 
+      
+      // Sisipkan di link URL
+      const urlGas = "https://script.google.com/macros/s/AKfycbxP3XhjIy9wBLEteEZH-sGAA2LHaJXHl60qYU5qghGlm20FiYRg4WJz4QPaB89OwUVCvQ/exec" 
+                   + "?action=getPbs&area=" + encodeURIComponent(area) 
+                   + "&date=" + encodeURIComponent(targetDate);
+                   
+      const response = await fetch(urlGas);
         const data = await response.json();
         
         if(data.length === 0) {
