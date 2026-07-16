@@ -1003,7 +1003,8 @@
           </tr>
         `).join('');
       } catch (err) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger fw-bold">Gagal terhubung ke server. Pastikan API PBS sudah di-deploy.</td></tr>';
+        console.error("Detail Error:", err); // Ini akan mencatat error aslinya di inspect element
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger fw-bold">Gagal memuat data! Error: ${err.message}</td></tr>`;
       }
     }
 
