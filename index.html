@@ -274,10 +274,7 @@
         <div class="p-4">
           <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
             <select id="pbs-area-filter" class="pbs-input m-0" style="width: auto; min-width: 200px;">
-              <option value="">Pilih Service Area</option>
-              <option value="Probolinggo">Probolinggo</option>
-              <option value="Pasuruan">Pasuruan</option>
-              <option value="Lumajang">Lumajang</option>
+              <option value="">Memuat Service Area...</option>
             </select>
             <!-- INI TAMBAHAN FILTER TANGGALNYA -->
             <input type="date" id="pbs-date-filter" class="pbs-input m-0" style="width: auto;">
@@ -961,6 +958,9 @@
       if (user === "admin" && pass === "anjay") {
         document.getElementById("pbs-login-screen").style.display = "none";
         document.getElementById("pbs-dashboard-screen").style.display = "block";
+        
+        // Panggil penarikan daftar Area secara otomatis!
+        loadPbsAreaOptions(); 
       } else {
         document.getElementById("pbs-error").style.display = "block";
       }
@@ -1004,6 +1004,25 @@
         `).join('');
       } catch (err) {
         tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger fw-bold">Gagal terhubung ke server. Pastikan API PBS sudah di-deploy.</td></tr>';
+      }
+    }
+
+    async function loadPbsAreaOptions() {
+      const selectArea = document.getElementById("pbs-area-filter");
+      
+      try {
+        const urlGasArea = "https://script.google.com/macros/s/AKfycbxP3XhjIy9wBLEteEZH-sGAA2LHaJXHl60qYU5qghGlm20FiYRg4WJz4QPaB89OwUVCvQ/exec?action=getPbsArea";
+        const response = await fetch(urlGasArea);
+        const dataArea = await response.json();
+        
+        let optionsHtml = '<option value="">Pilih Service Area</option>';
+        dataArea.forEach(area => {
+          optionsHtml += `<option value="${area}">${area}</option>`;
+        });
+        
+        selectArea.innerHTML = optionsHtml;
+      } catch (err) {
+        selectArea.innerHTML = '<option value="">Gagal memuat Area</option>';
       }
     }
    
