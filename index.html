@@ -967,12 +967,14 @@
       const area = document.getElementById("pbs-area-filter").value;
       if(!area) return alert("Silakan pilih Service Area terlebih dahulu!");
       
+      
       const tbody = document.getElementById("pbs-table-body");
       tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4">Menarik data dari database...</td></tr>';
       
       try {
         // Asumsi endpoint baru di backend Apps Script untuk PBS
-        const response = await fetch('/api/pbs?area=' + area); 
+        const urlGas = "https://script.google.com/macros/s/AKfycbxP3XhjIy9wBLEteEZH-sGAA2LHaJXHl60qYU5qghGlm20FiYRg4WJz4QPaB89OwUVCvQ/exec" + "?action=getPbs&area=" + encodeURIComponent(area);
+        const response = await fetch(urlGas);
         const data = await response.json();
         
         if(data.length === 0) {
