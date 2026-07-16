@@ -1045,7 +1045,7 @@
       const details = tipe === 'harian' ? tech.detailHarian : tech.detailBulanan;
 
       if(!details || details.length === 0) {
-        content.innerHTML = '<div class="alert alert-dark text-center mt-3">☕ Tidak ada pekerjaan dengan bobot poin yang tercatat.</div>';
+        content.innerHTML = '<div class="alert alert-dark text-center mt-3">☕ Tidak ada pekerjaan dengan bobot manhour yang tercatat.</div>';
       } else {
         let html = '<ul class="list-group list-group-flush mt-2">';
         details.forEach((item, i) => {
@@ -1057,7 +1057,7 @@
                   <span class="fw-bold text-info">${i+1}. ${item.order}</span>
                   ${tglText}
                 </div>
-                <span class="badge bg-danger rounded-pill shadow-sm" style="font-size: 12px;">+${item.bobot} Poin</span>
+                <span class="badge bg-danger rounded-pill shadow-sm" style="font-size: 12px;">+${item.bobot} MH</span>
               </div>
             </li>
           `;
@@ -1067,7 +1067,7 @@
         // Tambahan total summary di paling bawah
         let sumBobot = details.reduce((sum, current) => sum + current.bobot, 0);
         html += `<div class="mt-4 p-3 bg-dark rounded border border-secondary text-center">
-                   <strong class="text-white">TOTAL POIN: <span class="text-warning">${sumBobot.toFixed(2)}</span></strong>
+                   <strong class="text-white">TOTAL MH: <span class="text-warning">${sumBobot.toFixed(2)}</span></strong>
                  </div>`;
                  
         content.innerHTML = html;
