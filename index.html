@@ -254,7 +254,18 @@
         .pbs-table th { background: #2a2a2a; color: #bbb; font-weight: 600; }
         .pbs-table tr:hover { background: #252525; }
       </style>
-
+ </div>
+<!-- PANEL SAMPING DETAIL PEKERJAAN (OFFCANVAS) -->
+    <div id="pbs-side-panel" style="position: fixed; top: 0; right: -400px; width: 350px; max-width: 100%; height: 100vh; background: #1a1a1a; box-shadow: -5px 0 20px rgba(0,0,0,0.7); transition: right 0.3s ease; z-index: 9999; padding: 20px; overflow-y: auto; border-left: 3px solid #e53935;">
+      <div class="d-flex justify-content-between align-items-center mb-3 border-bottom border-secondary pb-2">
+        <h5 id="panel-title" class="fw-bold text-white m-0">Detail Pekerjaan</h5>
+        <span style="cursor: pointer; color: #ff5252; font-size: 28px; line-height: 1;" onclick="document.getElementById('pbs-side-panel').style.right = '-400px'">&times;</span>
+      </div>
+      <div id="panel-content" class="text-light" style="font-size: 0.85rem;">
+         Memuat detail...
+      </div>
+    </div>
+    
       <!-- Layar Login Admin -->
       <div id="pbs-login-screen">
         <div class="pbs-login-box">
@@ -264,7 +275,7 @@
           <button onclick="loginPbs()" class="pbs-btn mt-3">Masuk</button>
           <p id="pbs-error" class="text-danger mt-3 fw-bold" style="display: none; font-size: 13px;">Akses Ditolak!</p>
         </div>
-      </div>
+     
 
       <!-- Layar Dashboard PBS -->
       <div id="pbs-dashboard-screen" style="display: none;">
@@ -966,64 +977,105 @@
       }
     }
 
+ let globalPbsData = []; // Variabel global untuk menyimpan data performansi + detailnya
+
     async function loadPbsData() {
       const area = document.getElementById("pbs-area-filter").value;
-      if(!area) return alert("Silakan pilih Service Area terlebih dahulu!");
+      const targetDate = document.getElementById("pbs-date-filter").value; // Filter 1 tanggal saja
       
+      if(!area) return alert("Silakan pilih Service Area terlebih dahulu!");
       
       const tbody = document.getElementById("pbs-table-body");
       tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4">Menarik data dari database...</td></tr>';
       
       try {
-        // Ambil nilai tanggal dari form, jika kosong biarkan agar GAS menggunakan Hari Ini
-      const targetDate = document.getElementById("pbs-date-filter").value; 
-      
-      // Sisipkan di link URL
-      const urlGas = "https://script.google.com/macros/s/AKfycbxP3XhjIy9wBLEteEZH-sGAA2LHaJXHl60qYU5qghGlm20FiYRg4WJz4QPaB89OwUVCvQ/exec" 
-                   + "?action=getPbs&area=" + encodeURIComponent(area) 
-                   + "&date=" + encodeURIComponent(targetDate);
-                   
-      const response = await fetch(urlGas);
+        // GANTI INI DENGAN URL DEPLOY TERBARU MAS ECKY!
+        const urlGas = "https://script.google.com/macros/s/AKfycbxP3XhjIy9wBLEteEZH-sGAA2LHaJXHl60qYU5qghGlm20FiYRg4WJz4QPaB89OwUVCvQ/exec" 
+                     + "?action=getPbs&area=" + encodeURIComponent(area) 
+                     + "&date=" + encodeURIComponent(targetDate);
+                     
+        const response = await fetch(urlGas); 
         const data = await response.json();
         
-        // --- TAMBAHAN PERANGKAP ERROR ---
-        console.log("Balasan murni dari server:", data); // Cek di Inspect Element (Console)
-
-        // Cek jika balasan dari server malah status ditolak
+        globalPbsData = data; // Simpan datanya agar bisa dibaca oleh panel popup
+        
         if (data.status === "denied") {
-          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger fw-bold">Akses Ditolak! Script Google masih membaca versi lama. Silakan Deploy ulang Apps Script ke "New Version".</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger fw-bold">Akses Ditolak! Deploy versi baru.</td></tr>';
           return;
         }
-
-        // Cek jika balasan bukan berupa Array
-        if (!Array.isArray(data)) {
-          tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger fw-bold">Error Format: Server tidak mengirim data teknisi. <br><small>Isi balasan: ${JSON.stringify(data)}</small></td></tr>`;
-          return;
-        }
-        // ---------------------------------
 
         if(data.length === 0) {
           tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-warning">Tidak ada data teknisi untuk area ini.</td></tr>';
           return;
         }
 
+        // PERHATIKAN: Pada kolom Total Harian dan Total Bulanan, ditambahkan onclick
         tbody.innerHTML = data.map(d => `
           <tr>
             <td class="fw-bold">${d.nama}</td>
             <td>${d.nik}</td>
             <td>${d.sa}</td>
-            <td class="fw-bold text-warning">${d.totalHarian}</td>
+            <td class="fw-bold text-warning" style="cursor: pointer; text-decoration: underline;" onclick="showPbsDetail('${d.nik}', 'harian')" title="Klik untuk lihat detail pekerjaan harian">
+              ${d.totalHarian} 👆
+            </td>
             <td><span class="badge" style="background:#4caf50; font-size:12px;">${d.perfHarian}%</span></td>
-            <td class="fw-bold text-info">${d.totalBulanan}</td>
+            <td class="fw-bold text-info" style="cursor: pointer; text-decoration: underline;" onclick="showPbsDetail('${d.nik}', 'bulanan')" title="Klik untuk lihat detail pekerjaan bulanan">
+              ${d.totalBulanan} 👆
+            </td>
             <td><span class="badge" style="background:#2196f3; font-size:12px;">${d.perfBulanan}%</span></td>
           </tr>
         `).join('');
-
-   
       } catch (err) {
-        console.error("Detail Error:", err); // Ini akan mencatat error aslinya di inspect element
         tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger fw-bold">Gagal memuat data! Error: ${err.message}</td></tr>`;
       }
+    }
+
+    // FUNGSI BARU UNTUK MEMUNCULKAN PANEL POPUP MENYAMPING
+    function showPbsDetail(nik, tipe) {
+      const tech = globalPbsData.find(t => t.nik === nik);
+      if(!tech) return;
+
+      const panel = document.getElementById('pbs-side-panel');
+      const title = document.getElementById('panel-title');
+      const content = document.getElementById('panel-content');
+
+      // Set Judul Panel
+      title.innerHTML = `Detail ${tipe === 'harian' ? 'Harian' : 'Bulanan'}<br><small class="text-warning" style="font-size: 14px;">🧑‍🔧 ${tech.nama}</small>`;
+
+      // Ambil data array yang sesuai (harian atau bulanan)
+      const details = tipe === 'harian' ? tech.detailHarian : tech.detailBulanan;
+
+      if(!details || details.length === 0) {
+        content.innerHTML = '<div class="alert alert-dark text-center mt-3">☕ Tidak ada pekerjaan dengan bobot poin yang tercatat.</div>';
+      } else {
+        let html = '<ul class="list-group list-group-flush mt-2">';
+        details.forEach((item, i) => {
+          let tglText = item.tgl ? `<small class="d-block text-secondary" style="font-size: 11px;">📅 Tgl: ${item.tgl}</small>` : '';
+          html += `
+            <li class="list-group-item bg-transparent text-light border-secondary px-0 py-3">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <span class="fw-bold text-info">${i+1}. ${item.order}</span>
+                  ${tglText}
+                </div>
+                <span class="badge bg-danger rounded-pill shadow-sm" style="font-size: 12px;">+${item.bobot} Poin</span>
+              </div>
+            </li>
+          `;
+        });
+        html += '</ul>';
+        
+        // Tambahan total summary di paling bawah
+        let sumBobot = details.reduce((sum, current) => sum + current.bobot, 0);
+        html += `<div class="mt-4 p-3 bg-dark rounded border border-secondary text-center">
+                   <strong class="text-white">TOTAL POIN: <span class="text-warning">${sumBobot.toFixed(2)}</span></strong>
+                 </div>`;
+                 
+        content.innerHTML = html;
+      }
+
+      // Animasi geser panel masuk dari kanan ke angka 0
+      panel.style.right = '0'; 
     }
 
     async function loadPbsAreaOptions() {
