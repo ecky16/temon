@@ -986,6 +986,22 @@
       const response = await fetch(urlGas);
         const data = await response.json();
         
+        // --- TAMBAHAN PERANGKAP ERROR ---
+        console.log("Balasan murni dari server:", data); // Cek di Inspect Element (Console)
+
+        // Cek jika balasan dari server malah status ditolak
+        if (data.status === "denied") {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger fw-bold">Akses Ditolak! Script Google masih membaca versi lama. Silakan Deploy ulang Apps Script ke "New Version".</td></tr>';
+          return;
+        }
+
+        // Cek jika balasan bukan berupa Array
+        if (!Array.isArray(data)) {
+          tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger fw-bold">Error Format: Server tidak mengirim data teknisi. <br><small>Isi balasan: ${JSON.stringify(data)}</small></td></tr>`;
+          return;
+        }
+        // ---------------------------------
+
         if(data.length === 0) {
           tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-warning">Tidak ada data teknisi untuk area ini.</td></tr>';
           return;
@@ -1002,6 +1018,8 @@
             <td><span class="badge" style="background:#2196f3; font-size:12px;">${d.perfBulanan}%</span></td>
           </tr>
         `).join('');
+
+   
       } catch (err) {
         console.error("Detail Error:", err); // Ini akan mencatat error aslinya di inspect element
         tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger fw-bold">Gagal memuat data! Error: ${err.message}</td></tr>`;
