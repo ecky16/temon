@@ -7,7 +7,6 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
-   
     /* Import Font Poppins */
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
     
@@ -501,7 +500,8 @@
       XLSX.writeFile(workbook, `Rekap_History_Pekerjaan_${start}_sd_${end}.xlsx`);
     }
     
-function renderCards(data) {
+// RENDER KARTU TAB LIVE & UPDATE SUMMARY
+    function renderCards(data) {
       
       let tMasuk = 0, tShift2 = 0, tLibur = 0, tCuti = 0, tBantek = 0, tProg = 0, tIdle = 0;
       
@@ -661,8 +661,6 @@ function renderCards(data) {
       document.getElementById('loader').classList.add('d-none');
       if(currentTab === 'live') document.getElementById('content-live').classList.remove('d-none');
     }
-	
-	
 
     async function loadHistoryAndProduk() {
       document.getElementById('loader').classList.remove('d-none');
