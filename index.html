@@ -544,152 +544,171 @@
       XLSX.writeFile(workbook, `Rekap_History_Pekerjaan_${start}_sd_${end}.xlsx`);
     }
     
-// RENDER KARTU TAB LIVE & UPDATE SUMMARY
-    function renderCards(data) {
-      const container = document.getElementById('container'); // Pastikan ID ini sama dengan wadah card di HTML Mas
+function renderCards(data) {
+      const container = document.getElementById('tech-cards');
       if (!container) return;
-      container.innerHTML = '';
 
-      // 1. Variabel Statistik
-      let tMasuk = 0, tShift2 = 0, tLibur = 0, tCuti = 0, tBantek = 0, tProg = 0, tIdle = 0;
+      // JARING PENGAMAN: Mencegah Loading Abadi
+      try {
+          container.innerHTML = '';
 
-      // 2. Mesin Pembuat Card Inti
-      const generateCard = (item) => {
-        let jdwRaw = item.absensi || item.jadwal || "";
-        let statRaw = item.status || "";
-        let jdw = jdwRaw.toString().trim().toUpperCase();
-        let stat = statRaw.toString().trim().toUpperCase();
+          // Pastikan data yang dikirim dari GAS benar-benar berbentuk Array
+          if (!Array.isArray(data)) {
+             container.innerHTML = `<div class="alert alert-warning m-3 text-center text-dark">Data gagal dimuat atau kosong. Cek kembali koneksi bot.</div>`;
+             return;
+          }
 
-        let isLibur = jdw.includes("LIBUR") || stat.includes("LIBUR");
-        let isPiket = jdw.includes("PIKET") || jdw.includes("SHIFT 2") || jdw === "P";
-        let isCuti = jdw === "C" || jdw.includes("CUTI") || stat === "C" || stat.includes("CUTI");
-        let isBantek = jdw === "B" || jdw.includes("BANTEK") || stat === "B" || stat.includes("BANTEK");
+          // 1. Variabel Statistik
+          let tMasuk = 0, tShift2 = 0, tLibur = 0, tCuti = 0, tBantek = 0, tProg = 0, tIdle = 0;
 
-        // Hitung Statistik Dasar
-        if (isLibur) { tLibur++; }
-        else if (isCuti) { tCuti++; }
-        else if (isBantek) { tBantek++; }
-        else if (isPiket) { tShift2++; }
-        else { tMasuk++; }
+          // 2. Mesin Pembuat Card Inti
+          const generateCard = (item) => {
+            let jdwRaw = item.absensi || item.jadwal || "";
+            let statRaw = item.status || "";
+            let jdw = jdwRaw.toString().trim().toUpperCase();
+            let stat = statRaw.toString().trim().toUpperCase();
 
-        // Penentu apakah dia sedang ada pekerjaan aktif atau tidak
-        let isActive = item.detail && item.detail.durasi; 
+            let isLibur = jdw.includes("LIBUR") || stat.includes("LIBUR");
+            let isPiket = jdw.includes("PIKET") || jdw.includes("SHIFT 2") || jdw === "P";
+            let isCuti = jdw === "C" || jdw.includes("CUTI") || stat === "C" || stat.includes("CUTI");
+            let isBantek = jdw === "B" || jdw.includes("BANTEK") || stat === "B" || stat.includes("BANTEK");
 
-        if (isActive && !isLibur && !isCuti) {
-          tProg++;
-        } else if (!isLibur && !isCuti && !isBantek && !isPiket) {
-          tIdle++;
-        }
+            // Hitung Statistik Dasar
+            if (isLibur) { tLibur++; }
+            else if (isCuti) { tCuti++; }
+            else if (isBantek) { tBantek++; }
+            else if (isPiket) { tShift2++; }
+            else { tMasuk++; }
 
-        // Susun HTML Card (Sesuai dengan kode asli Mas Ecky)
-        return `
-          <div class="card tech-card border-0 shadow-sm h-100 position-relative">
-            <div class="card-body d-flex flex-column">
-              <div class="d-flex justify-content-between align-items-start mb-2">
-                <div>
-                  <h6 class="fw-bold mb-0 text-dark">${item.nama}</h6>
-                  <small class="text-muted">${item.nik || '-'}</small>
+            // Penentu apakah dia sedang ada pekerjaan aktif atau tidak
+            let isActive = item.detail && item.detail.durasi; 
+
+            if (isActive && !isLibur && !isCuti) {
+              tProg++;
+            } else if (!isLibur && !isCuti && !isBantek && !isPiket) {
+              tIdle++;
+            }
+
+            // Susun HTML Card
+            return `
+              <div class="card tech-card border-0 shadow-sm h-100 position-relative">
+                <div class="card-body d-flex flex-column">
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                      <h6 class="fw-bold mb-0 text-dark">${item.nama || 'Tanpa Nama'}</h6>
+                      <small class="text-muted">${item.nik || '-'}</small>
+                    </div>
+                  </div>
+                  <div class="mt-auto pt-2">
+                    ${isActive ? `
+                      <div class="active-box p-2 bg-light rounded mt-2" style="font-size:0.85rem;">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                          <span class="text-muted">Mulai:</span>
+                          <span class="fw-bold text-dark">🕒 ${item.detail.mulai || '-'}</span>
+                        </div>
+                        <div class="mb-1 bg-white p-1 rounded border border-danger text-center">
+                          <small class="text-danger fw-bold">⏳ Berjalan: ${item.detail.durasi || '-'}</span>
+                        </div>
+                        <small class="text-muted d-block mt-2 border-top pt-1" style="font-size:0.8rem;">
+                          👥 <b>Tim:</b> ${item.detail.utama || item.nama} ${item.detail.partner && item.detail.partner !== '-' ? `& ${item.detail.partner}` : '(Sendiri)'}
+                        </small>
+                      </div>
+                    ` : `
+                      <div class="idle-box text-center text-muted p-3 bg-light rounded mt-2">
+                        <span style="font-size: 1.5rem;">${isLibur ? '🏖️' : (isCuti ? '✈️' : (isPiket ? '🌙' : (isBantek ? '🤝' : '☕')))}</span><br>
+                        <small class="fw-medium">${isLibur ? 'Sedang libur tugas' : (isCuti ? 'Sedang menikmati cuti' : (isPiket ? 'Standby Shift 2 / Piket' : (isBantek ? 'Standby perbantuan teknis (Bantek)' : 'Siap menerima order baru')))}</small>
+                      </div>
+                    `}
+                  </div>
                 </div>
               </div>
-              <div class="mt-auto pt-2">
-                ${isActive ? `
-                  <div class="active-box p-2 bg-light rounded mt-2" style="font-size:0.85rem;">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                      <span class="text-muted">Mulai:</span>
-                      <span class="fw-bold text-dark">🕒 ${item.detail.mulai || '-'}</span>
-                    </div>
-                    <div class="mb-1 bg-white p-1 rounded border border-danger text-center">
-                      <small class="text-danger fw-bold">⏳ Berjalan: ${item.detail.durasi || '-'}</small>
-                    </div>
-                    <small class="text-muted d-block mt-2 border-top pt-1" style="font-size:0.8rem;">
-                      👥 <b>Tim:</b> ${item.detail.utama || item.nama} ${item.detail.partner && item.detail.partner !== '-' ? `& ${item.detail.partner}` : '(Sendiri)'}
-                    </small>
-                  </div>
-                ` : `
-                  <div class="idle-box text-center text-muted p-3 bg-light rounded mt-2">
-                    <span style="font-size: 1.5rem;">${isLibur ? '🏖️' : (isCuti ? '✈️' : (isPiket ? '🌙' : (isBantek ? '🤝' : '☕')))}</span><br>
-                    <small class="fw-medium">${isLibur ? 'Sedang libur tugas' : (isCuti ? 'Sedang menikmati cuti' : (isPiket ? 'Standby Shift 2 / Piket' : (isBantek ? 'Standby perbantuan teknis (Bantek)' : 'Siap menerima order baru')))}</small>
-                  </div>
-                `}
-              </div>
-            </div>
-          </div>
-        `;
-      };
+            `;
+          };
 
-      // 3. Logika Mengelompokkan Tim (Filter Otomatis)
-      let groupedData = [];
-      let processedNames = new Set();
+          // 3. Logika Mengelompokkan Tim (Anti Error jika Nama Kosong)
+          let groupedData = [];
+          let processedNames = new Set();
 
-      data.forEach(item => {
-        if (processedNames.has(item.nama)) return;
+          data.forEach(item => {
+            if (!item.nama || processedNames.has(item.nama)) return;
 
-        let partnerName = (item.detail && item.detail.partner && item.detail.partner !== '-') ? item.detail.partner : null;
+            let partnerName = (item.detail && item.detail.partner && item.detail.partner !== '-') ? item.detail.partner : null;
 
-        if (partnerName) {
-            let partnerItem = data.find(t => 
-                (t.nama === partnerName || (t.nik && t.nik === partnerName)) && 
-                !processedNames.has(t.nama) 
-            );
+            if (partnerName) {
+                let partnerItem = data.find(t => 
+                    t.nama && 
+                    (t.nama === partnerName || (t.nik && t.nik === partnerName)) && 
+                    !processedNames.has(t.nama) 
+                );
 
-            if (partnerItem) {
-                groupedData.push({ type: 'team', members: [item, partnerItem] });
-                processedNames.add(item.nama);
-                processedNames.add(partnerItem.nama);
+                if (partnerItem) {
+                    groupedData.push({ type: 'team', members: [item, partnerItem] });
+                    processedNames.add(item.nama);
+                    processedNames.add(partnerItem.nama);
+                } else {
+                    groupedData.push({ type: 'solo', members: [item] });
+                    processedNames.add(item.nama);
+                }
             } else {
                 groupedData.push({ type: 'solo', members: [item] });
                 processedNames.add(item.nama);
             }
-        } else {
-            groupedData.push({ type: 'solo', members: [item] });
-            processedNames.add(item.nama);
-        }
-      });
+          });
 
-      // 4. Render ke HTML
-      let finalHtml = '';
-      groupedData.forEach(group => {
-          if (group.type === 'team') {
-              let htmlA = generateCard(group.members[0]);
-              let htmlB = generateCard(group.members[1]);
+          // 4. Render ke HTML
+          let finalHtml = '';
+          groupedData.forEach(group => {
+              if (group.type === 'team') {
+                  let htmlA = generateCard(group.members[0]);
+                  let htmlB = generateCard(group.members[1]);
 
-              finalHtml += `
-                  <div class="col-12 col-xl-8 mb-3"> 
-                      <div class="team-wrapper">
-                          <div class="row align-items-center h-100">
-                              <div class="col-md-5 col-12 mb-3 mb-md-0">${htmlA}</div>
-                              <div class="col-md-2 col-12 d-flex justify-content-center">
-                                  <div class="tali-penghubung"></div>
+                  finalHtml += `
+                      <div class="col-12 col-xl-8 mb-3"> 
+                          <div class="team-wrapper">
+                              <div class="row align-items-center h-100">
+                                  <div class="col-md-5 col-12 mb-3 mb-md-0">${htmlA}</div>
+                                  <div class="col-md-2 col-12 d-flex justify-content-center">
+                                      <div class="tali-penghubung"></div>
+                                  </div>
+                                  <div class="col-md-5 col-12">${htmlB}</div>
                               </div>
-                              <div class="col-md-5 col-12">${htmlB}</div>
                           </div>
                       </div>
-                  </div>
-              `;
-          } else {
-              let htmlSolo = generateCard(group.members[0]);
-              finalHtml += `
-                  <div class="col-12 col-md-6 col-xl-4 mb-3">
-                      ${htmlSolo}
-                  </div>
-              `;
-          }
-      });
+                  `;
+              } else {
+                  let htmlSolo = generateCard(group.members[0]);
+                  finalHtml += `
+                      <div class="col-12 col-md-6 col-xl-4 mb-3">
+                          ${htmlSolo}
+                      </div>
+                  `;
+              }
+          });
 
-      // Masukkan ke layar
-      container.innerHTML = finalHtml;
+          // Masukkan ke layar
+          container.innerHTML = finalHtml;
 
-      // 5. Update Angka Statistik (Pastikan ID-nya sesuai dengan HTML Mas Ecky)
-      try {
-          if(document.getElementById('stat-masuk')) document.getElementById('stat-masuk').innerText = tMasuk;
-          if(document.getElementById('stat-shift2')) document.getElementById('stat-shift2').innerText = tShift2;
-          if(document.getElementById('stat-libur')) document.getElementById('stat-libur').innerText = tLibur;
-          if(document.getElementById('stat-cuti')) document.getElementById('stat-cuti').innerText = tCuti;
-          if(document.getElementById('stat-bantek')) document.getElementById('stat-bantek').innerText = tBantek;
-          if(document.getElementById('stat-prog')) document.getElementById('stat-prog').innerText = tProg;
-          if(document.getElementById('stat-idle')) document.getElementById('stat-idle').innerText = tIdle;
-      } catch (err) {
-          console.log("Statistik belum ada di HTML, tapi card berhasil dirender");
+          // 5. Update Angka Statistik 
+          try {
+              if(document.getElementById('stat-masuk')) document.getElementById('stat-masuk').innerText = tMasuk;
+              if(document.getElementById('stat-shift2')) document.getElementById('stat-shift2').innerText = tShift2;
+              if(document.getElementById('stat-libur')) document.getElementById('stat-libur').innerText = tLibur;
+              if(document.getElementById('stat-cuti')) document.getElementById('stat-cuti').innerText = tCuti;
+              if(document.getElementById('stat-bantek')) document.getElementById('stat-bantek').innerText = tBantek;
+              if(document.getElementById('stat-prog')) document.getElementById('stat-prog').innerText = tProg;
+              if(document.getElementById('stat-idle')) document.getElementById('stat-idle').innerText = tIdle;
+          } catch (err) { }
+          
+      } catch (error) {
+          // JIKA ADA ERROR, MUNCULKAN DI LAYAR HP (BUKAN LOADING ABADI)
+          console.error("Terjadi Error di renderCards:", error);
+          container.innerHTML = `
+            <div class="alert alert-danger m-3 border-danger shadow-sm">
+               <h6 class="fw-bold mb-1">⚠️ Gagal Merender Data</h6>
+               <small>${error.message}</small><br>
+               <small class="text-muted">Screenshot pesan ini dan kirim ke Gemini!</small>
+            </div>
+          `;
       }
     }
 
