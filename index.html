@@ -1098,40 +1098,53 @@ function renderCards(data) {
       }
     }
 
-	  async function loadPbsData() {
-      const areaFilter = document.getElementById('pbs-area-filter').value;
-      const dateFilter = document.getElementById('pbs-date-filter').value;
-      const tbody = document.getElementById('pbs-table-body');
+	 async function loadPbsData() {
+      const area = document.getElementById("pbs-area-filter").value;
+      const targetDate = document.getElementById("pbs-date-filter").value;
       
-      tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4">Memuat data PBS GENTENG... ⏳</td></tr>';
-
+      if(!area) return alert("Silakan pilih Service Area terlebih dahulu!");
+      
+      const tbody = document.getElementById("pbs-table-body");
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4">Menarik data dari database... ⏳</td></tr>';
+      
       try {
-        // Ganti URL_API_GENTENG dengan endpoint Vercel atau URL Web App GAS milik Mas Ecky
-        const response = await fetch('/api/pbs-genteng'); 
-        const pbsData = await response.json();
+        // Menembak langsung ke Web App GAS yang sudah ada
+        const urlGas = "https://script.google.com/macros/s/AKfycbxP3XhjIy9wBLEteEZH-sGAA2LHaJXHl60qYU5qghGlm20FiYRg4WJz4QPaB89OwUVCvQ/exec" 
+                     + "?action=getPbs&area=" + encodeURIComponent(area) 
+                     + "&date=" + encodeURIComponent(targetDate);
+                     
+        const response = await fetch(urlGas); 
+        const data = await response.json();
         
-        tbody.innerHTML = '';
+        globalPbsData = data; // Simpan ke variabel global untuk popup detail
         
-        if (pbsData.length === 0) {
-           tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Tidak ada data untuk area/tanggal tersebut.</td></tr>';
-           return;
+        if (data.status === "denied") {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger fw-bold">Akses Ditolak! Silakan Deploy versi baru di GAS.</td></tr>';
+          return;
         }
 
-        pbsData.forEach(item => {
-          tbody.innerHTML += `
-            <tr>
-              <td>${item.nama || '-'}</td>
-              <td>${item.nik || '-'}</td>
-              <td>${item.sa || '-'}</td>
-              <td>${item.totalHarian || 0}</td>
-              <td>${item.perfHarian || 0}</td>
-              <td>${item.totalBulanan || 0}</td>
-              <td>${item.perfBulanan || 0}</td>
-            </tr>
-          `;
-        });
-      } catch (error) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger fw-bold py-4">Gagal memuat data dari server.</td></tr>';
+        if(!data || data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-warning">Tidak ada data teknisi untuk area ini.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.map(d => `
+          <tr>
+            <td class="fw-bold">${d.nama || '-'}</td>
+            <td>${d.nik || '-'}</td>
+            <td>${d.sa || '-'}</td>
+            <td class="fw-bold text-warning" style="cursor: pointer; text-decoration: underline;" onclick="showPbsDetail('${d.nik}', 'harian')" title="Klik untuk lihat detail pekerjaan harian">
+              ${d.totalHarian || 0}
+            </td>
+            <td><span class="badge" style="background:#4caf50; font-size:12px;">${d.perfHarian || 0}%</span></td>
+            <td class="fw-bold text-info" style="cursor: pointer; text-decoration: underline;" onclick="showPbsDetail('${d.nik}', 'bulanan')" title="Klik untuk lihat detail pekerjaan bulanan">
+              ${d.totalBulanan || 0}
+            </td>
+            <td><span class="badge" style="background:#2196f3; font-size:12px;">${d.perfBulanan || 0}%</span></td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger fw-bold">Gagal memuat data! Error: ${err.message}</td></tr>`;
       }
     }
    
