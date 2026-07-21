@@ -1097,6 +1097,43 @@ function renderCards(data) {
         selectArea.innerHTML = '<option value="">Gagal memuat Area</option>';
       }
     }
+
+	  async function loadPbsData() {
+      const areaFilter = document.getElementById('pbs-area-filter').value;
+      const dateFilter = document.getElementById('pbs-date-filter').value;
+      const tbody = document.getElementById('pbs-table-body');
+      
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4">Memuat data PBS GENTENG... ⏳</td></tr>';
+
+      try {
+        // Ganti URL_API_GENTENG dengan endpoint Vercel atau URL Web App GAS milik Mas Ecky
+        const response = await fetch('/api/pbs-genteng'); 
+        const pbsData = await response.json();
+        
+        tbody.innerHTML = '';
+        
+        if (pbsData.length === 0) {
+           tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Tidak ada data untuk area/tanggal tersebut.</td></tr>';
+           return;
+        }
+
+        pbsData.forEach(item => {
+          tbody.innerHTML += `
+            <tr>
+              <td>${item.nama || '-'}</td>
+              <td>${item.nik || '-'}</td>
+              <td>${item.sa || '-'}</td>
+              <td>${item.totalHarian || 0}</td>
+              <td>${item.perfHarian || 0}</td>
+              <td>${item.totalBulanan || 0}</td>
+              <td>${item.perfBulanan || 0}</td>
+            </tr>
+          `;
+        });
+      } catch (error) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger fw-bold py-4">Gagal memuat data dari server.</td></tr>';
+      }
+    }
    
   </script>
    <footer style="text-align: right; padding: 12px 24px 16px; font-size: 0.72rem; color: #030c17; font-family: 'Poppins', sans-serif;">
