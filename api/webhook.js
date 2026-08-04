@@ -33,7 +33,19 @@ module.exports = async (req, res) => {
       await sendTG("Maaf, ID Telegram kamu belum terdaftar di whitelist (db_teknisi).");
       return res.status(200).send('OK');
     }
-
+// 0. TANGKAP LIVE LOCATION DARI TELEGRAM (MESSAGE & EDITED_MESSAGE)
+    const locationObj = update.message?.location || update.edited_message?.location;
+    if (locationObj) {
+      const lat = locationObj.latitude;
+      const lng = locationObj.longitude;
+      await fetchGAS({ action: "update_live_location", chatId, lat, lng, namaTeknisi });
+      
+      // Jika ini pesan lokasi pertama yang baru di-share
+      if (update.message?.location) {
+        await sendTG("✅ *Live Location Berhasil Terdeteksi!*\n\nStatus lokasi Anda aktif selama 8 jam. Silakan ketik /start untuk memilih STO dan pekerjaan.");
+      }
+      return res.status(200).send('OK');
+    }
     // 1. TANGKAP PESAN TEXT DARI USER
     if (update.message && text) {
       if (text === "/start") {
@@ -44,7 +56,15 @@ module.exports = async (req, res) => {
             const txt = `Kamu saat ini berstatus sedang bekerja:\n\n🛠 *${activeJob.pekerjaan}*\n📍 *STO ${activeJob.sto}*\n👥 *Partner:* ${activeJob.partner || '-'}\n\nJika pekerjaan ini sudah selesai, silakan klik tombol di bawah.`;
             const kb = { inline_keyboard: [[{ text: "✅ Selesai Progress", callback_data: "finish_current" }]] };
             await sendTG(txt, kb);
-          } else {
+          } 
+          // Cek apakah Live Location teknisi masih aktif di sistem
+        const isLiveActive = await fetchGAS({ action: "check_live_location", chatId });
+        if (!isLiveActive) {
+          const alertLoc = `⚠️ *LIVE LOCATION MENTOK / BELUM AKTIF!*\n\nUntuk memastikan pergerakan tim terpantau di Dashboard Peta, Anda wajib mengaktifkan Live Location Telegram terlebih dahulu:\n\n1. Klik ikon **Lampiran (📎)** di Telegram.\n2. Pilih menu **Lokasi (Location)**.\n3. Pilih **"Bagikan Lokasi Langsung Saya..." (Share My Live Location...)**.\n4. Setel waktunya ke **8 Jam**.\n\n*Setelah Live Location aktif, silakan ketik /start lagi.*`;
+          await sendTG(alertLoc);
+          return res.status(200).send('OK');
+        }
+        else {
             // Skenario si B di-tag oleh si A
             const txt = `Kamu saat ini telah *didaftarkan oleh ${activeJob.utama}* dalam 1 tim untuk pekerjaan:\n\n🛠 *${activeJob.pekerjaan}*\n📍 *STO ${activeJob.sto}*\n\nKamu tidak perlu melakukan input lagi.\nNamun, jika kamu saat ini berpisah tim dan akan mengerjakan order lain, silakan klik tombol di bawah ini:`;
             const kb = { inline_keyboard: [[{ text: "👋 Keluar dari Tim (Misah)", callback_data: "leave_team" }]] };
