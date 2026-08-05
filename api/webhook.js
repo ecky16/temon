@@ -49,31 +49,32 @@ module.exports = async (req, res) => {
     // 1. TANGKAP PESAN TEXT DARI USER
     if (update.message && text) {
       if (text === "/start") {
-        // Cek apakah dia sedang terikat pekerjaan aktif sebelum nembak daftar STO
+        // 1. Cek apakah dia sedang terikat pekerjaan aktif sebelum nembak daftar STO
         const activeJob = await fetchGAS({ action: "get_active_job", namaTeknisi });
         if (activeJob) {
           if (activeJob.role === "utama") {
             const txt = `Kamu saat ini berstatus sedang bekerja:\n\n🛠 *${activeJob.pekerjaan}*\n📍 *STO ${activeJob.sto}*\n👥 *Partner:* ${activeJob.partner || '-'}\n\nJika pekerjaan ini sudah selesai, silakan klik tombol di bawah.`;
             const kb = { inline_keyboard: [[{ text: "✅ Selesai Progress", callback_data: "finish_current" }]] };
             await sendTG(txt, kb);
-          } 
-          // Cek apakah Live Location teknisi masih aktif di sistem
-        const isLiveActive = await fetchGAS({ action: "check_live_location", chatId });
-        if (!isLiveActive) {
-          const alertLoc = `⚠️ *LIVE LOCATION MENTOK / BELUM AKTIF!*\n\nUntuk memastikan pergerakan tim terpantau di Dashboard Peta, Anda wajib mengaktifkan Live Location Telegram terlebih dahulu:\n\n1. Klik ikon **Lampiran (📎)** di Telegram.\n2. Pilih menu **Lokasi (Location)**.\n3. Pilih **"Bagikan Lokasi Langsung Saya..." (Share My Live Location...)**.\n4. Setel waktunya ke **8 Jam**.\n\n*Setelah Live Location aktif, silakan ketik /start lagi.*`;
-          await sendTG(alertLoc);
-          return res.status(200).send('OK');
-        }
-        else {
+          } else {
             // Skenario si B di-tag oleh si A
             const txt = `Kamu saat ini telah *didaftarkan oleh ${activeJob.utama}* dalam 1 tim untuk pekerjaan:\n\n🛠 *${activeJob.pekerjaan}*\n📍 *STO ${activeJob.sto}*\n\nKamu tidak perlu melakukan input lagi.\nNamun, jika kamu saat ini berpisah tim dan akan mengerjakan order lain, silakan klik tombol di bawah ini:`;
             const kb = { inline_keyboard: [[{ text: "👋 Keluar dari Tim (Misah)", callback_data: "leave_team" }]] };
             await sendTG(txt, kb);
           }
-          return res.status(200).send('OK'); // Hentikan agar tidak muncul list STO
+          return res.status(200).send('OK'); // Hentikan di sini agar tidak muncul list STO jika masih ada kerjaan
         }
 
-        // BAGIAN YANG DIUBAH: Mengirimkan namaTeknisi agar GAS bisa mencari Service Areanya
+        // 2. BLOK CEK LIVE LOCATION BARU (Diletakkan di LUAR dan DI BAWAH pengecekan activeJob)
+        const isLiveActive = await fetchGAS({ action: "check_live_location", chatId });
+        if (!isLiveActive) {
+          const alertLoc = `⚠️ *LIVE LOCATION MENTOK / BELUM AKTIF!*\n\nUntuk memastikan pergerakan tim terpantau di Dashboard Peta, Anda wajib mengaktifkan Live Location Telegram terlebih dahulu:\n\n1. Klik ikon **Lampiran (📎)** di Telegram.\n2. Pilih menu **Lokasi (Location)**.\n3. Pilih **"Bagikan Lokasi Langsung Saya..." (Share My Live Location...)**.\n4. Setel waktunya ke **8 Jam**.\n\n*Setelah Live Location aktif, silakan ketik /start lagi.*`;
+          await sendTG(alertLoc);
+          return res.status(200).send('OK'); // Hentikan di sini dan minta lokasi
+        }
+
+        // 3. JIKA LOKASI AMAN, BARU TAMPILKAN LIST STO
+        // Mengirimkan namaTeknisi agar GAS bisa mencari Service Areanya
         const stoList = await fetchGAS({ action: "get_sto_list", namaTeknisi: namaTeknisi });
         
         // Proteksi tambahan jika list STO kosong atau Service Area salah
@@ -91,7 +92,7 @@ module.exports = async (req, res) => {
         
         await sendTG("Silakan pilih lokasi STO tempat kamu bertugas saat ini:", { inline_keyboard: buttons });
         return res.status(200).send('OK');
-      } 
+      }
       
       // Skenario ngetik uraian pekerjaan
       const userState = await fetchGAS({ action: "get_state", chatId });
