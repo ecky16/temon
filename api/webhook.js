@@ -68,7 +68,7 @@ module.exports = async (req, res) => {
         // 2. BLOK CEK LIVE LOCATION BARU (Diletakkan di LUAR dan DI BAWAH pengecekan activeJob)
         const isLiveActive = await fetchGAS({ action: "check_live_location", chatId });
         if (!isLiveActive) {
-          const alertLoc = `⚠️ *LIVE LOCATION MENTOK / BELUM AKTIF!*\n\nUntuk memastikan pergerakan tim terpantau di Dashboard Peta, Anda wajib mengaktifkan Live Location Telegram terlebih dahulu:\n\n1. Klik ikon **Lampiran (📎)** di Telegram.\n2. Pilih menu **Lokasi (Location)**.\n3. Pilih **"Bagikan Lokasi Langsung Saya..." (Share My Live Location...)**.\n4. Setel waktunya ke **8 Jam**.\n\n*Setelah Live Location aktif, silakan ketik /start lagi.*`;
+          const alertLoc = `⚠️ *LIVE LOCATION TERDETEKSI BELUM AKTIF!*\n\nUntuk memastikan pergerakan tim terpantau di Dashboard Peta, Anda wajib mengaktifkan Live Location Telegram terlebih dahulu:\n\n1. Klik ikon **Lampiran (📎)** di Telegram.\n2. Pilih menu **Lokasi (Location)**.\n3. Pilih **"Bagikan Lokasi Langsung Saya..." (Share My Live Location...)**.\n4. Setel waktunya ke **8 Jam**.\n\n*Setelah Live Location aktif, silakan ketik /start lagi.*`;
           await sendTG(alertLoc);
           return res.status(200).send('OK'); // Hentikan di sini dan minta lokasi
         }
