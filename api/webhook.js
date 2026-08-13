@@ -5,7 +5,9 @@ module.exports = async (req, res) => {
   const GAS_WEBAPP_URL = process.env.GAS_WEBAPP_URL; 
   
   const update = req.body;
-  const chatId = update.message?.chat.id || update.callback_query?.message.chat.id;
+  
+  // FIX 1: Tambahkan edited_message agar background Live Location tidak terbuang
+  const chatId = update.message?.chat?.id || update.callback_query?.message?.chat?.id || update.edited_message?.chat?.id;
   const text = update.message?.text;
   const callbackData = update.callback_query?.data;
 
@@ -21,7 +23,6 @@ module.exports = async (req, res) => {
   };
 
   try {
-    // FIX: Tambahkan redirect 'follow' dan Try-Catch agar tidak crash
     const fetchGAS = async (payload) => {
       try {
         const resp = await fetch(GAS_WEBAPP_URL, {
@@ -41,6 +42,8 @@ module.exports = async (req, res) => {
 
     const namaTeknisi = await fetchGAS({ action: "check_whitelist", chatId });
     if (!namaTeknisi) {
+      // Jangan spam peringatan jika ini cuma update lokasi background
+      if (update.edited_message) return res.status(200).send('OK');
       await sendTG("Maaf, ID Telegram kamu belum terdaftar di whitelist (db_teknisi).");
       return res.status(200).send('OK');
     }
@@ -62,10 +65,15 @@ module.exports = async (req, res) => {
     if (update.message && text) {
       if (text === "/start") {
         
-        // FIX BUNDLING: Hanya 1x request ke GAS untuk ngambil semua info awal
         const startData = await fetchGAS({ action: "init_start", chatId, namaTeknisi });
         
-        if (startData && startData.activeJob) {
+        // FIX 2: Jika data kosong, berarti Google Apps Script masih pakai versi lama (Belum New Deployment)
+        if (!startData) {
+          await sendTG("⚠️ *Sistem Error:* Bot tidak mengenali perintah. Silakan buka Google Apps Script, klik tombol **Deploy -> New Deployment** (Jangan hanya di-save).");
+          return res.status(200).send('OK');
+        }
+        
+        if (startData.activeJob) {
           const aj = startData.activeJob;
           if (aj.role === "utama") {
             const txt = `Kamu saat ini berstatus sedang bekerja:\n\n🛠 *${aj.pekerjaan}*\n📍 *STO ${aj.sto}*\n👥 *Partner:* ${aj.partner || '-'}\n\nJika pekerjaan ini sudah selesai, silakan klik tombol di bawah.`;
@@ -77,7 +85,7 @@ module.exports = async (req, res) => {
           return res.status(200).send('OK'); 
         }
 
-        if (!startData || !startData.isLiveActive) {
+        if (!startData.isLiveActive) {
           const alertLoc = `⚠️ *LIVE LOCATION TERDETEKSI BELUM AKTIF!*\n\nUntuk memastikan pergerakan tim terpantau di Dashboard Peta, Anda wajib mengaktifkan Live Location Telegram terlebih dahulu:\n\n1. Klik ikon **Lampiran (📎)** di Telegram.\n2. Pilih menu **Lokasi (Location)**.\n3. Pilih **"Bagikan Lokasi Langsung Saya..." (Share My Live Location...)**.\n4. Setel waktunya ke **8 Jam**.\n\n*Setelah Live Location aktif, silakan ketik /start lagi.*`;
           await sendTG(alertLoc);
           return res.status(200).send('OK');
@@ -108,7 +116,6 @@ module.exports = async (req, res) => {
     // 2. TANGKAP TOMBOL INLINE
     if (update.callback_query) {
       
-      // FIX: Matikan efek loading tombol Telegram dengan answerCallbackQuery
       fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/answerCallbackQuery`, {
         method: 'POST', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ callback_query_id: update.callback_query.id })
