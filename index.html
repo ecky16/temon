@@ -454,7 +454,13 @@
         populateSADropdown(dashboardDataFull);
         applyGlobalFilter();
       } catch (error) {
-        document.getElementById('last-update').innerHTML = "Gagal memuat data!";
+        console.error("Error Load Data:", error);
+        document.getElementById('last-update').innerHTML = "⚠️ Gagal memuat data (Koneksi Terputus).";
+        
+        // MATIKAN LOADER MESKIPUN ERROR AGAR TIDAK MACET
+        document.getElementById('loader').classList.add('d-none');
+        document.getElementById('content-live').innerHTML = '<div class="alert alert-danger text-center shadow-sm">Gagal terhubung ke database server. Silakan klik tombol Refresh.</div>';
+        document.getElementById('content-live').classList.remove('d-none');
       }
     }
 // FUNGSI EKSPOR HISTORY KE EXCEL BESERTA FILTER NYA
