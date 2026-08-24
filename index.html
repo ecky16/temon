@@ -649,7 +649,10 @@ function renderCards(data) {
                 <div class="d-flex justify-content-between align-items-start mb-2">
                   <div>
                     <h6 class="card-title fw-bold mb-0 text-dark">${item.nama}</h6>
-                    <small class="text-muted" style="font-size:0.75rem;">NIK: ${item.nik} | SA: <b>${item.sa || '-'}</b></small>
+                    <small class="text-muted" style="font-size:0.75rem;">
+                      NIK: ${item.nik} | SA: <b>${item.sa || '-'}</b> <br>
+                      Posisi: <b class="text-danger">${item.posisi || '-'}</b>
+                    </small>
                     <div class="mt-1">
                       <span class="badge ${jadwalBadgeClass}">${teksJadwal}</span>
                     </div>
