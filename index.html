@@ -834,8 +834,19 @@ function renderCards(data) {
       });
 
       // HITUNG STATISTIK PER POSISI
+   // HITUNG STATISTIK PER POSISI
       let posisiCounts = {};
 
+      // 1. INISIALISASI SEMUA POSISI AGAR TETAP MUNCUL MESKIPUN 0 ORDER
+      baseTechs.forEach(t => {
+          let pos = t.posisi || 'Belum Diset';
+          if (pos === '-') pos = 'Belum Diset';
+          if (!posisiCounts[pos]) {
+              posisiCounts[pos] = { selesai: 0, progress: 0, total: 0 };
+          }
+      });
+
+      // 2. HITUNG JUMLAH ORDER JIKA ADA
       filtered.forEach(h => {
           let posUtama = h.posisi || 'Belum Diset';
           if (posUtama === '-') posUtama = 'Belum Diset';
