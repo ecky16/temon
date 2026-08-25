@@ -425,7 +425,7 @@
                 let isLibur = jdw.includes("LIBUR") || stat.includes("LIBUR");
                 let isPiket = jdw.includes("PIKET") || jdw.includes("SHIFT 2") || jdw === "P";
                 let isCuti = jdw === "C" || jdw.includes("CUTI") || stat === "C" || stat.includes("CUTI");
-                let isSakit = jdw === "S" || jdw.includes("Sakit") || stat === "B" || stat.includes("Sakit");
+                let isSakit = jdw === "S" || jdw.includes("Sakit") || stat === "S" || stat.includes("Sakit");
 
                 let actualStatus = 'IDLE';
                 if (stat === 'PROGRESS') actualStatus = 'PROGRESS';
