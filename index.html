@@ -546,7 +546,7 @@ function renderCards(data) {
         // Deteksi "P" otomatis masuk ke Piket/Shift 2
         let isPiket = jdw.includes("PIKET") || jdw.includes("SHIFT 2") || jdw === "P"; 
         let isCuti = jdw === "C" || jdw.includes("CUTI") || stat === "C" || stat.includes("CUTI");
-        let isSakit = jdw === "B" || jdw.includes("Sakit") || stat === "B" || stat.includes("Sakit");
+        let isSakit = jdw === "S" || jdw.includes("SAKIT") || stat === "S" || stat.includes("SAKIT");
         
         if (isLibur) {
             tLibur++;
@@ -604,7 +604,7 @@ function renderCards(data) {
         let isLibur = jdw.includes("LIBUR") || stat.includes("LIBUR");
         let isPiket = jdw.includes("PIKET") || jdw.includes("SHIFT 2") || jdw === "P";
         let isCuti = jdw === "C" || jdw.includes("CUTI") || stat === "C" || stat.includes("CUTI");
-        let isSakit = jdw === "B" || jdw.includes("Sakit") || stat === "B" || stat.includes("Sakit");
+        let isSakit = jdw === "S" || jdw.includes("SAKIT") || stat === "S" || stat.includes("SAKIT");
         
         var isIdle = stat === "IDLE";
         var badgeClass = isIdle ? "bg-idle" : "bg-working pulse-working"; 
@@ -637,9 +637,9 @@ function renderCards(data) {
           jadwalBadgeClass = "bg-secondary";
           teksJadwal = "✈️ Cuti (C)";
         } else if (isSakit) {
-          jadwalBadgeClass = "bg-info text-dark";
-          teksJadwal = "🤝 Sakit";
-        }
+  jadwalBadgeClass = "bg-info text-dark";
+  teksJadwal = "🤒 Sakit";
+}
         
         var cardHtml = `
           <div class="col-md-4 col-lg-3">
@@ -682,8 +682,8 @@ function renderCards(data) {
                     </div>
                   ` : `
                     <div class="idle-box text-center text-muted">
-                      <span style="font-size: 1.5rem;">${isLibur ? '🏖️' : (isCuti ? '✈️' : (isPiket ? '🌙' : (isSakit ? '🤝' : '☕')))}</span><br>
-                      <small class="fw-medium">${isLibur ? 'Sedang libur tugas' : (isCuti ? 'Sedang menikmati cuti' : (isPiket ? 'Standby Shift 2 / Piket' : (isSakit ? 'Standby perbantuan teknis (Sakit)' : 'Siap menerima order baru')))}</small>
+                      <span style="font-size: 1.5rem;">${isLibur ? '🏖️' : (isCuti ? '✈️' : (isPiket ? '🌙' : (isSakit ? '🤒' : '☕')))}</span><br>
+                      <small class="fw-medium">${isLibur ? 'Sedang libur tugas' : (isCuti ? 'Sedang menikmati cuti' : (isPiket ? 'Standby Shift 2 / Piket' : (isSakit ? 'Teknisi sedang sakit' : 'Siap menerima order baru')))}</small>
                     </div>
                   `}
                 </div>
@@ -1024,9 +1024,9 @@ function renderCards(data) {
                              rincianHtml = `<span class="badge bg-warning text-dark px-2 py-1">🏖️ Libur</span>`;
                          } else if (js === "C" || js.includes("CUTI")) {
                              rincianHtml = `<span class="badge bg-secondary text-white px-2 py-1">✈️ Cuti</span>`;
-                         } else if (js === "B" || js.includes("Sakit")) {
-                             rincianHtml = `<span class="badge bg-info text-dark px-2 py-1">🤝 Sakit (Standby)</span>`;
-                         } else {
+                        } else if (js === "S" || js.includes("SAKIT")) {
+    rincianHtml = `<span class="badge bg-info text-dark px-2 py-1">🤒 Sakit</span>`;
+} else {
                              rincianHtml = `<small class="text-muted fst-italic">☕ Standby / Belum ada aktivitas</small>`;
                          }
                      }
