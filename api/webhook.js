@@ -5,50 +5,55 @@ module.exports = async (req, res) => {
   const GAS_WEBAPP_URL = process.env.GAS_WEBAPP_URL; 
   
   const update = req.body;
-  
-  // FIX 1: Tambahkan edited_message agar background Live Location tidak terbuang
   const chatId = update.message?.chat?.id || update.callback_query?.message?.chat?.id || update.edited_message?.chat?.id;
   const text = update.message?.text;
   const callbackData = update.callback_query?.data;
 
   if (!chatId) return res.status(200).send('OK');
 
-  const sendTG = async (textMsg, keyboard = null) => {
-    let payload = { chat_id: chatId, text: textMsg, parse_mode: "Markdown" };
+  // Tambahan dukungan targetChatId untuk notifikasi ke partner
+  const sendTG = async (textMsg, keyboard = null, targetChatId = chatId) => {
+    let payload = { chat_id: targetChatId, text: textMsg, parse_mode: "Markdown" };
     if (keyboard) payload.reply_markup = keyboard;
     await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(payload)
-    });
+    }).catch(() => {});
   };
 
   try {
     const fetchGAS = async (payload) => {
       try {
+        // PELINDUNG TIMEOUT: Hentikan paksa jika GAS loading lebih dari 8.5 detik
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8500);
+
         const resp = await fetch(GAS_WEBAPP_URL, {
           method: 'POST', 
           headers: { 'Content-Type': 'application/json' }, 
           body: JSON.stringify(payload),
-          redirect: 'follow' 
+          redirect: 'follow',
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
+
         const textResp = await resp.text();
         const parsed = JSON.parse(textResp);
         return parsed ? parsed.data : null;
       } catch (err) {
-        console.error("Gagal Fetch ke GAS:", err);
+        console.error("Gagal Fetch ke GAS:", err.message);
         return null;
       }
     };
 
     const namaTeknisi = await fetchGAS({ action: "check_whitelist", chatId });
     if (!namaTeknisi) {
-      // Jangan spam peringatan jika ini cuma update lokasi background
       if (update.edited_message) return res.status(200).send('OK');
       await sendTG("Maaf, ID Telegram kamu belum terdaftar di whitelist (db_teknisi).");
       return res.status(200).send('OK');
     }
 
-    // 0. TANGKAP LIVE LOCATION DARI TELEGRAM
+    // 0. TANGKAP LIVE LOCATION
     const locationObj = update.message?.location || update.edited_message?.location;
     if (locationObj) {
       const lat = locationObj.latitude;
@@ -61,15 +66,13 @@ module.exports = async (req, res) => {
       return res.status(200).send('OK');
     }
 
-    // 1. TANGKAP PESAN TEXT DARI USER
+    // 1. TANGKAP PESAN TEXT /start
     if (update.message && text) {
       if (text === "/start") {
-        
         const startData = await fetchGAS({ action: "init_start", chatId, namaTeknisi });
         
-        // FIX 2: Jika data kosong, berarti Google Apps Script masih pakai versi lama (Belum New Deployment)
         if (!startData) {
-          await sendTG("⚠️ *Sistem Error:* Bot tidak mengenali perintah. Silakan buka Google Apps Script, klik tombol **Deploy -> New Deployment** (Jangan hanya di-save).");
+          await sendTG("⚠️ *Koneksi Sibuk:* Server sedang memproses antrean. Silakan ketik /start beberapa detik lagi.");
           return res.status(200).send('OK');
         }
         
@@ -115,7 +118,7 @@ module.exports = async (req, res) => {
 
     // 2. TANGKAP TOMBOL INLINE
     if (update.callback_query) {
-      
+      // Langsung matikan loading di tombol Telegram seketika
       fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/answerCallbackQuery`, {
         method: 'POST', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ callback_query_id: update.callback_query.id })
@@ -146,13 +149,10 @@ module.exports = async (req, res) => {
           await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/editMessageReplyMarkup`, {
             method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ chat_id: chatId, message_id: update.callback_query.message.message_id, reply_markup: { inline_keyboard: [] } })
-          });
+          }).catch(()=>{});
           await sendTG("✅ *Berhasil Keluar Tim.*\n\nStatus kamu sekarang *Idle*. Silakan ketik /start lagi untuk menginput pekerjaan baru kamu.");
           if (result.tgIdUtama) {
-            await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-              method: 'POST', headers: {'Content-Type': 'application/json'},
-              body: JSON.stringify({ chat_id: result.tgIdUtama, text: `⚠️ *INFO TIM:*\nRekan tim kamu (*${namaTeknisi}*) telah keluar dari tim karena mengerjakan order lain.\n\nStatus kamu sekarang menjadi *Kerja Sendiri* untuk tiket:\n🛠 ${result.pekerjaan}`, parse_mode: "Markdown" })
-            });
+            await sendTG(`⚠️ *INFO TIM:*\nRekan tim kamu (*${namaTeknisi}*) telah keluar dari tim karena mengerjakan order lain.\n\nStatus kamu sekarang menjadi *Kerja Sendiri* untuk tiket:\n🛠 ${result.pekerjaan}`, null, result.tgIdUtama);
           }
         } else {
           await sendTG("Gagal keluar dari tim. Mungkin pekerjaan sudah diselesaikan.");
@@ -165,7 +165,7 @@ module.exports = async (req, res) => {
           await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/editMessageReplyMarkup`, {
             method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ chat_id: chatId, message_id: update.callback_query.message.message_id, reply_markup: { inline_keyboard: [] } })
-          });
+          }).catch(()=>{});
           await sendTG("✅ Status Pekerjaan Selesai! Status kembali ke *Idle* (Hijau) dan dicatat di spreadsheet.");
         } else await sendTG("Gagal memperbarui status. Pekerjaan mungkin sudah diselesaikan.");
       }
@@ -174,6 +174,7 @@ module.exports = async (req, res) => {
     return res.status(200).send('OK');
   } catch (err) {
     console.error("Terjadi Error Internal:", err);
-    return res.status(500).send(err.toString());
+    // WAJIB KEMBALIKAN 200 OK APAPUN YANG TERJADI AGAR TELEGRAM TIDAK SPAM
+    return res.status(200).send('OK');
   }
 };
