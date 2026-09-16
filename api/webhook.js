@@ -54,14 +54,16 @@ module.exports = async (req, res) => {
     }
 
     // 0. TANGKAP LIVE LOCATION
+    // 0. TANGKAP LOKASI KERJA (CURRENT LOCATION)
     const locationObj = update.message?.location || update.edited_message?.location;
     if (locationObj) {
       const lat = locationObj.latitude;
       const lng = locationObj.longitude;
-      await fetchGAS({ action: "update_live_location", chatId, lat, lng });
+      await fetchGASWithTimeout({ action: "update_live_location", chatId, lat, lng });
       
+      // Jika ini pesan lokasi baru, berikan balasan sukses
       if (update.message?.location) {
-        await sendTG("✅ *Live Location Berhasil Terdeteksi!*\n\nStatus lokasi Anda aktif selama 8 jam. Silakan ketik /start untuk memilih STO dan pekerjaan.");
+        await sendTG("✅ *Lokasi Kerja Berhasil Disimpan!*\n\nSilakan ketik /start untuk memilih STO dan pekerjaan.");
       }
       return res.status(200).send('OK');
     }
@@ -89,13 +91,13 @@ module.exports = async (req, res) => {
         }
 
         if (!startData.isLiveActive) {
-          const alertLoc = `⚠️ *LIVE LOCATION TERDETEKSI BELUM AKTIF!*\n\nUntuk memastikan pergerakan tim terpantau di Dashboard Peta, Anda wajib mengaktifkan Live Location Telegram terlebih dahulu:\n\n1. Klik ikon **Lampiran (📎)** di Telegram.\n2. Pilih menu **Lokasi (Location)**.\n3. Pilih **"Bagikan Lokasi Langsung Saya..." (Share My Live Location...)**.\n4. Setel waktunya ke **8 Jam**.\n\n*Setelah Live Location aktif, silakan ketik /start lagi.*`;
+          const alertLoc = `⚠️ *LOKASI KERJA BELUM DIKETAHUI!*\n\nUntuk memulai pekerjaan, Anda wajib mengirimkan titik koordinat tempat Anda bekerja saat ini:\n\n1. Klik ikon **Lampiran (📎)** di Telegram.\n2. Pilih menu **Lokasi (Location)**.\n3. Klik **"Kirim Lokasi Saat Ini" (Send My Current Location)**.\n\n*Setelah lokasi terkirim, silakan ketik /start lagi.*`;
           await sendTG(alertLoc);
           return res.status(200).send('OK');
         }
-
+        
         if (!startData.stoList || startData.stoList.length === 0) {
-           await sendTG("⚠️ Maaf, tidak ada STO yang ditemukan untuk Service Area kamu. Pastikan Service Area kamu sudah terisi dengan benar di spreadsheet.");
+           await sendTG("⚠️ Maaf, tidak ada STO yang ditemukan untuk Service Area kamu. Pastikan Service Area kamu sudah terisi dengan benar.");
            return res.status(200).send('OK');
         }
 
