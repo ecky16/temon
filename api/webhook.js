@@ -11,7 +11,6 @@ module.exports = async (req, res) => {
 
   if (!chatId) return res.status(200).send('OK');
 
-  // Tambahan dukungan targetChatId untuk notifikasi ke partner
   const sendTG = async (textMsg, keyboard = null, targetChatId = chatId) => {
     let payload = { chat_id: targetChatId, text: textMsg, parse_mode: "Markdown" };
     if (keyboard) payload.reply_markup = keyboard;
@@ -24,7 +23,6 @@ module.exports = async (req, res) => {
   try {
     const fetchGAS = async (payload) => {
       try {
-        // PELINDUNG TIMEOUT: Hentikan paksa jika GAS loading lebih dari 8.5 detik
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 8500);
 
@@ -53,15 +51,15 @@ module.exports = async (req, res) => {
       return res.status(200).send('OK');
     }
 
-    // 0. TANGKAP LIVE LOCATION
-    // 0. TANGKAP LOKASI KERJA (CURRENT LOCATION)
+    // 0. TANGKAP LOKASI KERJA (CURRENT LOCATION) - SUDAH DIPERBAIKI
     const locationObj = update.message?.location || update.edited_message?.location;
     if (locationObj) {
       const lat = locationObj.latitude;
       const lng = locationObj.longitude;
-      await fetchGASWithTimeout({ action: "update_live_location", chatId, lat, lng });
       
-      // Jika ini pesan lokasi baru, berikan balasan sukses
+      // Panggil fetchGAS yang benar
+      await fetchGAS({ action: "update_live_location", chatId, lat, lng });
+      
       if (update.message?.location) {
         await sendTG("✅ *Lokasi Kerja Berhasil Disimpan!*\n\nSilakan ketik /start untuk memilih STO dan pekerjaan.");
       }
@@ -95,9 +93,9 @@ module.exports = async (req, res) => {
           await sendTG(alertLoc);
           return res.status(200).send('OK');
         }
-        
+
         if (!startData.stoList || startData.stoList.length === 0) {
-           await sendTG("⚠️ Maaf, tidak ada STO yang ditemukan untuk Service Area kamu. Pastikan Service Area kamu sudah terisi dengan benar.");
+           await sendTG("⚠️ Maaf, tidak ada STO yang ditemukan untuk Service Area kamu. Pastikan Service Area kamu sudah terisi dengan benar di spreadsheet.");
            return res.status(200).send('OK');
         }
 
@@ -120,7 +118,6 @@ module.exports = async (req, res) => {
 
     // 2. TANGKAP TOMBOL INLINE
     if (update.callback_query) {
-      // Langsung matikan loading di tombol Telegram seketika
       fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/answerCallbackQuery`, {
         method: 'POST', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ callback_query_id: update.callback_query.id })
@@ -176,7 +173,6 @@ module.exports = async (req, res) => {
     return res.status(200).send('OK');
   } catch (err) {
     console.error("Terjadi Error Internal:", err);
-    // WAJIB KEMBALIKAN 200 OK APAPUN YANG TERJADI AGAR TELEGRAM TIDAK SPAM
     return res.status(200).send('OK');
   }
 };
