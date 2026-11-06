@@ -575,13 +575,18 @@ function renderCards(data) {
         let jdw = jdwRaw.toString().trim().toUpperCase();
         let stat = statRaw.toString().trim().toUpperCase();
         
+        // IDENTIFIKASI STATUS UTAMA (MURNI, TANPA CAMPUR ADUK)
         let isLibur = jdw.includes("LIBUR") || stat.includes("LIBUR");
-        let isPiket = jdw.includes("PIKET") || jdw.includes("SHIFT 2") || jdw === "P"; 
+        let isPiket = jdw === "P" || jdw.includes("PIKET") || jdw.includes("SHIFT 2");
         let isCuti = jdw === "C" || jdw.includes("CUTI") || stat === "C" || stat.includes("CUTI");
         let isSakit = jdw === "S" || jdw.includes("SAKIT") || stat === "S" || stat.includes("SAKIT");
         let isBantek = jdw === "B" || jdw.includes("BANTEK"); 
+        
+        // Deteksi Teknisi Masuk Pagi Biasa: 
+        // Jika jadwal adalah "M", "MASUK", atau jika BUKAN Libur/Cuti/Sakit/Piket/Bantek.
+        let isMasukPagi = jdw === "M" || jdw === "MASUK" || (!isLibur && !isCuti && !isSakit && !isPiket && !isBantek);
 
-        // 1. HITUNG BERDASARKAN ABSENSI (KEHADIRAN)
+        // 1. HITUNG KEHADIRAN (STATISTIK KOTAK SUMMARY)
         if (isLibur) {
             tLibur++;
         } else if (isCuti) {
@@ -590,19 +595,21 @@ function renderCards(data) {
             tSakit++; 
         } else if (isPiket) {
             tShift2++;
-            // Piket tidak kita hitung sebagai Masuk Pagi agar tidak ganda
-        } else if (isBantek) {
-            tMasuk++; // Jika dia Bantek, tetap dihitung masuk
-        } else {
-            // JIKA STATUSNYA "M", KOSONG, ATAU SELAIN DI ATAS -> BERARTI MASUK PAGI
-            tMasuk++; 
+        }
+        
+        // Teknisi Masuk Pagi langsung ditambah di sini
+        if (isMasukPagi) {
+            tMasuk++;
         }
 
-        // 2. HITUNG BERDASARKAN STATUS PEKERJAAN (PROGRESS/IDLE)
+        // 2. HITUNG STATUS KERJA (PROGRESS/IDLE)
         if (stat === 'PROGRESS') {
             tProg++;
-        } else if (stat === 'IDLE' && !isLibur && !isCuti && !isSakit) {
-            tIdle++; // Semua yang idle tapi tidak libur/cuti/sakit dihitung idle
+        } else if (stat === 'IDLE') {
+            // Yang dihitung Idle hanya yang sedang standby (Bukan sedang libur/cuti/sakit)
+            if (!isLibur && !isCuti && !isSakit) {
+                tIdle++; 
+            }
         }
       });
       
@@ -626,11 +633,11 @@ function renderCards(data) {
         let jdwA = (a.absensi || a.jadwal || "").toString().trim().toUpperCase();
         let statA = (a.status || "").toString().trim().toUpperCase();
         
-        let isA_Off = jdwA.includes('LIBUR') || jdwA === 'C' || jdwA.includes('CUTI') || jdwA === 'B' || jdwA.includes('Sakit') || jdwA === 'S';
+        let isA_Off = jdwA.includes('LIBUR') || jdwA === 'C' || jdwA.includes('CUTI') || jdwA === 'B' || jdwA.includes('SAKIT') || jdwA === 'S';
         
         let jdwB = (b.absensi || b.jadwal || "").toString().trim().toUpperCase();
         let statB = (b.status || "").toString().trim().toUpperCase();
-        let isB_Off = jdwB.includes('LIBUR') || jdwB === 'C' || jdwB.includes('CUTI') || jdwB === 'B' || jdwB.includes('Sakit') || jdwB === 'S';
+        let isB_Off = jdwB.includes('LIBUR') || jdwB === 'C' || jdwB.includes('CUTI') || jdwB === 'B' || jdwB.includes('SAKIT') || jdwB === 'S';
         
         let rankA = statA === 'PROGRESS' ? 1 : (isA_Off ? 3 : 2);
         let rankB = statB === 'PROGRESS' ? 1 : (isB_Off ? 3 : 2);
@@ -643,9 +650,11 @@ function renderCards(data) {
         let stat = (item.status || "").toString().trim().toUpperCase();
 
         let isLibur = jdw.includes("LIBUR") || stat.includes("LIBUR");
-        let isPiket = jdw.includes("PIKET") || jdw.includes("SHIFT 2") || jdw === "P";
+        let isPiket = jdw === "P" || jdw.includes("PIKET") || jdw.includes("SHIFT 2");
         let isCuti = jdw === "C" || jdw.includes("CUTI") || stat === "C" || stat.includes("CUTI");
         let isSakit = jdw === "S" || jdw.includes("SAKIT") || stat === "S" || stat.includes("SAKIT");
+        let isBantek = jdw === "B" || jdw.includes("BANTEK");
+        let isMasukPagi = jdw === "M" || jdw === "MASUK" || (!isLibur && !isCuti && !isSakit && !isPiket && !isBantek);
         
         var isIdle = stat === "IDLE";
         var badgeClass = isIdle ? "bg-idle" : "bg-working pulse-working"; 
@@ -669,9 +678,10 @@ function renderCards(data) {
         var jadwalBadgeClass = "bg-primary";
         var teksJadwal = jdwRaw || "-"; 
         
-        // --- LOGIKA MENAMPILKAN "M" MENJADI "MASUK PAGI" DI BADGE KARTU ---
+        // --- LOGIKA MENAMPILKAN STATUS DI BADGE KARTU ---
         if (isLibur) {
           jadwalBadgeClass = "bg-warning text-dark";
+          teksJadwal = "🏖️ Libur";
         } else if (isPiket) {
           jadwalBadgeClass = "bg-piket-jadwal";
           teksJadwal = "⏱️ Shift 2";
@@ -681,7 +691,10 @@ function renderCards(data) {
         } else if (isSakit) {
           jadwalBadgeClass = "bg-info text-dark";
           teksJadwal = "🤒 Sakit";
-        } else if (jdw === "M" || jdw === "MASUK") {
+        } else if (isBantek) {
+          jadwalBadgeClass = "bg-info text-dark";
+          teksJadwal = "🤝 Bantek";
+        } else if (isMasukPagi) {
           jadwalBadgeClass = "bg-primary";
           teksJadwal = "🧑‍🔧 Masuk Pagi";
         }
