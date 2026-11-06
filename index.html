@@ -342,12 +342,16 @@
     let dashboardDataFull = [];
 
 
-	  // FUNGSI UNTUK MENJALANKAN QUICK FILTER SAAT KOTAK STATISTIK DIKLIK
+	 // FUNGSI UNTUK MENJALANKAN QUICK FILTER SAAT KOTAK STATISTIK DIKLIK
     function quickFilterStatus(statusValue) {
       const statusFilterSelect = document.getElementById('status-filter');
       if (statusFilterSelect) {
-        statusFilterSelect.value = statusValue; // Ubah nilai dropdown utama sesuai pilihan klik
-        applyGlobalFilter(); // Jalankan fungsi filter yang sudah ada
+        statusFilterSelect.value = statusValue; 
+        
+        // Sengaja berikan sedikit jeda agar DOM merender pilihan select terlebih dahulu
+        setTimeout(() => {
+          applyGlobalFilter();
+        }, 50);
       }
     }
 	  
@@ -424,23 +428,26 @@
 
           // Filter 2: Pencarian Nama (Real-time ngetik langsung berubah)
           if(searchText) {
-             filtered = filtered.filter(d => d.nama.toLowerCase().includes(searchText));
+             filtered = filtered.filter(d => (d.nama || "").toLowerCase().includes(searchText));
           }
 
-          // Filter 3: Dropdown Status (Dibuat Spesifik)
+          // Filter 3: Dropdown Status (Versi Diperkuat)
           if(statusFilter !== 'ALL') {
              filtered = filtered.filter(d => {
                 let jdwRaw = d.absensi || d.jadwal || "";
                 let statRaw = d.status || "";
+                
                 let jdw = jdwRaw.toString().trim().toUpperCase();
                 let stat = statRaw.toString().trim().toUpperCase();
 
+                // Deteksi status dengan lebih aman
                 let isLibur = jdw.includes("LIBUR") || stat.includes("LIBUR");
                 let isPiket = jdw.includes("PIKET") || jdw.includes("SHIFT 2") || jdw === "P";
                 let isCuti = jdw === "C" || jdw.includes("CUTI") || stat === "C" || stat.includes("CUTI");
                 let isSakit = jdw === "S" || jdw.includes("SAKIT") || stat === "S" || stat.includes("SAKIT");
+                let isBantek = jdw === "B" || jdw.includes("BANTEK"); 
 
-                let actualStatus = 'MASUK'; // Default awal
+                let actualStatus = 'MASUK'; // Default teknisi yang hadir biasa
                 
                 if (stat === 'PROGRESS') {
                     actualStatus = 'PROGRESS';
@@ -450,6 +457,8 @@
                     actualStatus = 'CUTI';
                 } else if (isSakit) {
                     actualStatus = 'SAKIT';
+                } else if (isBantek) {
+                    actualStatus = 'BANTEK';
                 } else if (isPiket) {
                     actualStatus = 'PIKET';
                 } else if (stat === 'IDLE') {
@@ -459,6 +468,14 @@
                 return actualStatus === statusFilter;
              });
           }
+          
+          renderCards(filtered);
+       } else if (currentTab === 'history') {
+          filterHistory(); 
+       } else if (currentTab === 'produk') {
+          renderProduktivitas();
+       }
+    }
           
           renderCards(filtered);
        } else if (currentTab === 'history') {
