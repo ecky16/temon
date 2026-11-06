@@ -342,7 +342,7 @@
     let dashboardDataFull = [];
 
 
-	 // FUNGSI UNTUK MENJALANKAN QUICK FILTER SAAT KOTAK STATISTIK DIKLIK
+	// FUNGSI UNTUK MENJALANKAN QUICK FILTER SAAT KOTAK STATISTIK DIKLIK
     function quickFilterStatus(statusValue) {
       const statusFilterSelect = document.getElementById('status-filter');
       if (statusFilterSelect) {
@@ -413,6 +413,7 @@
        if(uniqueSA.includes(currentVal)) select.value = currentVal;
     }
 
+   // FUNGSI FILTER UTAMA
     function applyGlobalFilter() {
        if(currentTab === 'live') {
           const selectedSA = document.getElementById('sa-filter').value;
@@ -440,7 +441,7 @@
                 let jdw = jdwRaw.toString().trim().toUpperCase();
                 let stat = statRaw.toString().trim().toUpperCase();
 
-                // Deteksi status dengan lebih aman
+                // Deteksi status dengan aman
                 let isLibur = jdw.includes("LIBUR") || stat.includes("LIBUR");
                 let isPiket = jdw.includes("PIKET") || jdw.includes("SHIFT 2") || jdw === "P";
                 let isCuti = jdw === "C" || jdw.includes("CUTI") || stat === "C" || stat.includes("CUTI");
@@ -476,15 +477,8 @@
           renderProduktivitas();
        }
     }
-          
-          renderCards(filtered);
-       } else if (currentTab === 'history') {
-          filterHistory(); 
-       } else if (currentTab === 'produk') {
-          renderProduktivitas();
-       }
-    }
 
+	  
     async function loadData() {
       document.getElementById('loader').classList.remove('d-none');
       document.getElementById('content-live').classList.add('d-none');
