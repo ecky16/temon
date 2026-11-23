@@ -34,7 +34,7 @@ module.exports = async (req, res) => {
     const fetchGAS = async (payload) => {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8500);
+        const timeoutId = setTimeout(() => controller.abort(), 12000);
 
         const resp = await fetch(GAS_WEBAPP_URL, {
           method: 'POST', 
@@ -47,10 +47,14 @@ module.exports = async (req, res) => {
 
         const textResp = await resp.text();
         const parsed = JSON.parse(textResp);
+        if (parsed && parsed.status === "error") {
+          console.error("GAS Error:", parsed.message);
+          return { _error: parsed.message };
+        }
         return parsed ? parsed.data : null;
       } catch (err) {
         console.error("Gagal Fetch ke GAS:", err.message);
-        return null;
+        return { _error: err.message };
       }
     };
 
@@ -154,8 +158,8 @@ module.exports = async (req, res) => {
           partner: targetPartner, 
           chatId: chatId 
         });
-        if (!saved) {
-          await sendTG("⚠️ *Gagal menyimpan ke Spreadsheet!* Server Google sedang sibuk/timeout. Silakan ketik ulang ordernya.");
+        if (!saved || saved._error) {
+          await sendTG(`⚠️ *Gagal menyimpan ke Spreadsheet!*\nPenyebab: \`${saved?._error || 'Respon GAS kosong (cek New Version deployment)'}\``);
           return res.status(200).send('OK');
         }
         await sendTG(`✅ *BERHASIL DIDAFTARKAN KORLAP!*\n\n👷‍♂️ *Teknisi:* ${targetTech}\n👥 *Partner:* ${targetPartner || 'Sendiri'}\n📍 *STO:* ${userState.sto}\n🛠 *Order:* ${text}\n\nStatus di Dashboard TeMon otomatis berubah menjadi *Progress*.`);
