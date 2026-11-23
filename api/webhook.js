@@ -128,12 +128,13 @@ module.exports = async (req, res) => {
         return res.status(200).send('OK');
       }
       
-      const userState = await fetchGAS({ action: "get_state", chatId });
+    const userState = await fetchGAS({ action: "get_state", chatId });
 
-      
       if (userState && userState.state === "WAITING_FOR_JOB_DESC") {
         await fetchGAS({ action: "input_job", nama: namaTeknisi, pekerjaan: text, sto: userState.sto, partner: userState.partner, chatId: chatId });
+        await fetchGAS({ action: "clear_state", chatId });
         await sendTG(`🚀 Pekerjaan Berhasil Diinput!\n\nStatus tim berubah menjadi *Progress*.\nJika pekerjaan sudah selesai, silakan klik tombol selesai di bawah ini:`, { inline_keyboard: [[{ text: "✅ Selesai Progress", callback_data: "finish_current" }]] });
+        return res.status(200).send('OK');
       }
       // JIKA INPUTAN DARI KORLAP (/admin)
       if (userState && userState.state === "ADMIN_WAITING_JOB_DESC") {
