@@ -1,3 +1,6 @@
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first');
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(200).send('OK');
 
@@ -14,10 +17,17 @@ module.exports = async (req, res) => {
   const sendTG = async (textMsg, keyboard = null, targetChatId = chatId) => {
     let payload = { chat_id: targetChatId, text: textMsg, parse_mode: "Markdown" };
     if (keyboard) payload.reply_markup = keyboard;
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(payload)
-    }).catch(() => {});
+    try {
+      const r = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+        method: 'POST', 
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(6000)
+      });
+      if (!r.ok) console.error("Telegram Error:", await r.text());
+    } catch (e) {
+      console.error("Gagal kirim TG:", e.message);
+    }
   };
 
   try {
@@ -51,26 +61,22 @@ module.exports = async (req, res) => {
       return res.status(200).send('OK');
     }
 
-    // 0. TANGKAP LOKASI KERJA (CURRENT LOCATION) - SUDAH DIPERBAIKI
+    // 0. TANGKAP LOKASI KERJA
     const locationObj = update.message?.location || update.edited_message?.location;
     if (locationObj) {
       const lat = locationObj.latitude;
       const lng = locationObj.longitude;
-      
-      // Panggil fetchGAS yang benar
       await fetchGAS({ action: "update_live_location", chatId, lat, lng });
-      
       if (update.message?.location) {
         await sendTG("✅ *Lokasi Kerja Berhasil Disimpan!*\n\nSilakan ketik /start untuk memilih STO dan pekerjaan.");
       }
       return res.status(200).send('OK');
     }
 
-    // 1. TANGKAP PESAN TEXT /start
+    // 1. TANGKAP PESAN TEXT
     if (update.message && text) {
       if (text === "/start") {
         const startData = await fetchGAS({ action: "init_start", chatId, namaTeknisi });
-        
         if (!startData) {
           await sendTG("⚠️ *Koneksi Sibuk:* Server sedang memproses antrean. Silakan ketik /start beberapa detik lagi.");
           return res.status(200).send('OK');
@@ -104,12 +110,10 @@ module.exports = async (req, res) => {
         for (let i = 0; i < stoButtonsFlat.length; i += 3) {
             buttons.push(stoButtonsFlat.slice(i, i + 3));
         }
-        
         await sendTG("Silakan pilih lokasi STO tempat kamu bertugas saat ini:", { inline_keyboard: buttons });
         return res.status(200).send('OK');
       }
 
-// --- COMMAND RAHASIA: /admin (KHUSUS KORLAP) ---
       if (text === "/admin") {
         const isAdmin = await fetchGAS({ action: "check_admin", chatId });
         if (!isAdmin) {
@@ -128,7 +132,7 @@ module.exports = async (req, res) => {
         return res.status(200).send('OK');
       }
       
-    const userState = await fetchGAS({ action: "get_state", chatId });
+      const userState = await fetchGAS({ action: "get_state", chatId });
 
       if (userState && userState.state === "WAITING_FOR_JOB_DESC") {
         await fetchGAS({ action: "input_job", nama: namaTeknisi, pekerjaan: text, sto: userState.sto, partner: userState.partner, chatId: chatId });
@@ -136,9 +140,8 @@ module.exports = async (req, res) => {
         await sendTG(`🚀 Pekerjaan Berhasil Diinput!\n\nStatus tim berubah menjadi *Progress*.\nJika pekerjaan sudah selesai, silakan klik tombol selesai di bawah ini:`, { inline_keyboard: [[{ text: "✅ Selesai Progress", callback_data: "finish_current" }]] });
         return res.status(200).send('OK');
       }
-      // JIKA INPUTAN DARI KORLAP (/admin)
+
       if (userState && userState.state === "ADMIN_WAITING_JOB_DESC") {
-        // userState.partner di sini kita pakai nyimpan format "NAMA_TEKNISI|NAMA_PARTNER"
         const [targetTech, targetPartner] = userState.partner.split("|");
         await fetchGAS({ 
           action: "input_job", 
@@ -164,14 +167,12 @@ module.exports = async (req, res) => {
       if (callbackData.startsWith("sto_")) {
         const selectedSto = callbackData.replace("sto_", "");
         const idleTechs = await fetchGAS({ action: "get_idle_techs", namaTeknisi });
-        
         const partnerButtonsFlat = idleTechs.map(name => ({ text: `👦 ${name}`, callback_data: `partner_${name}|${selectedSto}` }));
         const buttons = [];
         for (let i = 0; i < partnerButtonsFlat.length; i += 2) {
           buttons.push(partnerButtonsFlat.slice(i, i + 2));
         }
         buttons.push([{ text: "🏃 Kerja Sendiri", callback_data: `partner_none|${selectedSto}` }]);
-        
         await sendTG(`STO Terpilih: ${selectedSto}\n\nPilih rekan tim kamu:`, { inline_keyboard: buttons });
       }
       else if (callbackData.startsWith("partner_")) {
@@ -206,16 +207,13 @@ module.exports = async (req, res) => {
           await sendTG("✅ Status Pekerjaan Selesai! Status kembali ke *Idle* (Hijau) dan dicatat di spreadsheet.");
         } else await sendTG("Gagal memperbarui status. Pekerjaan mungkin sudah diselesaikan.");
       }
-      // --- CALLBACK TOMBOL KHUSUS /ADMIN ---
       else if (callbackData.startsWith("adm_sa_")) {
         const selectedSA = callbackData.replace("adm_sa_", "");
         const idleTechs = await fetchGAS({ action: "get_idle_by_sa", sa: selectedSA });
-        
         if (!idleTechs || idleTechs.length === 0) {
           await sendTG(`⚠️ Semua teknisi di area *${selectedSA}* sedang Progress atau belum terdata.`);
           return res.status(200).send('OK');
         }
-
         const techButtonsFlat = idleTechs.map(name => ({ text: `👷‍♂️ ${name}`, callback_data: `adm_tech_${name}|${selectedSA}` }));
         const buttons = [];
         for (let i = 0; i < techButtonsFlat.length; i += 2) {
@@ -226,7 +224,6 @@ module.exports = async (req, res) => {
       else if (callbackData.startsWith("adm_tech_")) {
         const [techName, selectedSA] = callbackData.replace("adm_tech_", "").split("|");
         const stoList = await fetchGAS({ action: "get_sto_by_sa", sa: selectedSA });
-
         const stoButtonsFlat = stoList.map(sto => ({ text: `📍 ${sto}`, callback_data: `adm_sto_${sto}|${techName}|${selectedSA}` }));
         const buttons = [];
         for (let i = 0; i < stoButtonsFlat.length; i += 3) {
@@ -237,8 +234,6 @@ module.exports = async (req, res) => {
       else if (callbackData.startsWith("adm_sto_")) {
         const [sto, techName, selectedSA] = callbackData.replace("adm_sto_", "").split("|");
         const idleTechs = await fetchGAS({ action: "get_idle_by_sa", sa: selectedSA });
-        
-        // Filter agar teknisi utama tidak muncul sebagai partner dirinya sendiri
         const partnerList = idleTechs.filter(n => n !== techName);
         const partnerButtonsFlat = partnerList.map(name => ({ text: `👦 ${name}`, callback_data: `adm_part_${name}|${sto}|${techName}` }));
         const buttons = [];
@@ -246,14 +241,11 @@ module.exports = async (req, res) => {
           buttons.push(partnerButtonsFlat.slice(i, i + 2));
         }
         buttons.push([{ text: "🏃 Kerja Sendiri", callback_data: `adm_part_none|${sto}|${techName}` }]);
-
         await sendTG(`👷‍♂️ Teknisi: *${techName}*\n📍 STO: *${sto}*\n\nPilih rekan timnya (Partner):`, { inline_keyboard: buttons });
       }
       else if (callbackData.startsWith("adm_part_")) {
         const [partnerRaw, sto, techName] = callbackData.replace("adm_part_", "").split("|");
         const partner = partnerRaw === "none" ? "" : partnerRaw;
-        
-        // Simpan state admin (gabungkan nama teknisi & partner di variabel partner agar tidak perlu ubah fungsi set_state di GAS)
         await fetchGAS({ 
           action: "set_state", 
           chatId, 
@@ -261,7 +253,6 @@ module.exports = async (req, res) => {
           sto: sto, 
           partner: `${techName}|${partner}` 
         });
-
         await sendTG(`📝 *Konfirmasi Data Korlap:*\n• Teknisi: *${techName}*\n• Partner: *${partner || 'Sendiri'}*\n• STO: *${sto}*\n\nSilakan ketik *No Tiket / Uraian Pekerjaan* sekarang:`);
       }
     }
