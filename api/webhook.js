@@ -135,15 +135,18 @@ module.exports = async (req, res) => {
       const userState = await fetchGAS({ action: "get_state", chatId });
 
       if (userState && userState.state === "WAITING_FOR_JOB_DESC") {
-        await fetchGAS({ action: "input_job", nama: namaTeknisi, pekerjaan: text, sto: userState.sto, partner: userState.partner, chatId: chatId });
-        await fetchGAS({ action: "clear_state", chatId });
+        const saved = await fetchGAS({ action: "input_job", nama: namaTeknisi, pekerjaan: text, sto: userState.sto, partner: userState.partner, chatId: chatId });
+        if (!saved) {
+          await sendTG("⚠️ *Gagal menyimpan ke Spreadsheet!* Server Google sedang sibuk/timeout. Silakan ketik ulang ordernya.");
+          return res.status(200).send('OK');
+        }
         await sendTG(`🚀 Pekerjaan Berhasil Diinput!\n\nStatus tim berubah menjadi *Progress*.\nJika pekerjaan sudah selesai, silakan klik tombol selesai di bawah ini:`, { inline_keyboard: [[{ text: "✅ Selesai Progress", callback_data: "finish_current" }]] });
         return res.status(200).send('OK');
       }
 
       if (userState && userState.state === "ADMIN_WAITING_JOB_DESC") {
         const [targetTech, targetPartner] = userState.partner.split("|");
-        await fetchGAS({ 
+        const saved = await fetchGAS({ 
           action: "input_job", 
           nama: targetTech, 
           pekerjaan: `${text} (Input by Korlap)`, 
@@ -151,7 +154,10 @@ module.exports = async (req, res) => {
           partner: targetPartner, 
           chatId: chatId 
         });
-        await fetchGAS({ action: "clear_state", chatId });
+        if (!saved) {
+          await sendTG("⚠️ *Gagal menyimpan ke Spreadsheet!* Server Google sedang sibuk/timeout. Silakan ketik ulang ordernya.");
+          return res.status(200).send('OK');
+        }
         await sendTG(`✅ *BERHASIL DIDAFTARKAN KORLAP!*\n\n👷‍♂️ *Teknisi:* ${targetTech}\n👥 *Partner:* ${targetPartner || 'Sendiri'}\n📍 *STO:* ${userState.sto}\n🛠 *Order:* ${text}\n\nStatus di Dashboard TeMon otomatis berubah menjadi *Progress*.`);
         return res.status(200).send('OK');
       }
