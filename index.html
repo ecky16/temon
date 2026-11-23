@@ -102,9 +102,9 @@
           </select>
         </div>
         
-        <div class="col-md-3" id="div-search-tech">
+       <div class="col-md-3" id="div-search-tech">
           <label class="form-label fw-bold text-muted small">🔍 CARI NAMA TEKNISI:</label>
-          <input type="text" id="search-tech" class="form-control border-danger fw-medium shadow-sm" style="border-radius: 10px;" placeholder="Ketik nama..." oninput="applyGlobalFilter()">
+          <input type="text" id="search-tech" class="form-control border-danger fw-medium shadow-sm" style="border-radius: 10px;" placeholder="Ketik nama..." autocomplete="off" readonly onfocus="this.removeAttribute('readonly');" oninput="applyGlobalFilter()">
         </div>
         <!-- AREA DROPDOWN STATUS DIPERBARUI -->
         <div class="col-md-3" id="div-status-filter">
@@ -433,6 +433,7 @@
           }
 
           // Filter 3: Dropdown Status (Versi Diperkuat)
+          // Filter 3: Dropdown Status
           // Filter 3: Dropdown Status
           if(statusFilter !== 'ALL') {
              filtered = filtered.filter(d => {
