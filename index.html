@@ -433,6 +433,7 @@
           }
 
           // Filter 3: Dropdown Status (Versi Diperkuat)
+          // Filter 3: Dropdown Status
           if(statusFilter !== 'ALL') {
              filtered = filtered.filter(d => {
                 let jdwRaw = d.absensi || d.jadwal || "";
@@ -441,32 +442,22 @@
                 let jdw = jdwRaw.toString().trim().toUpperCase();
                 let stat = statRaw.toString().trim().toUpperCase();
 
-                // Deteksi status dengan aman
                 let isLibur = jdw.includes("LIBUR") || stat.includes("LIBUR");
-                let isPiket = jdw.includes("PIKET") || jdw.includes("SHIFT 2") || jdw === "P";
+                let isPiket = jdw === "P" || jdw.includes("PIKET") || jdw.includes("SHIFT 2");
                 let isCuti = jdw === "C" || jdw.includes("CUTI") || stat === "C" || stat.includes("CUTI");
                 let isSakit = jdw === "S" || jdw.includes("SAKIT") || stat === "S" || stat.includes("SAKIT");
-                let isBantek = jdw === "B" || jdw.includes("BANTEK"); 
+                let isBantek = jdw === "B" || jdw.includes("BANTEK");
+                let isMasukPagi = jdw === "M" || jdw === "MASUK" || (!isLibur && !isCuti && !isSakit && !isPiket && !isBantek);
 
-                let actualStatus = 'MASUK'; // Default teknisi yang hadir biasa
-                
-                if (stat === 'PROGRESS') {
-                    actualStatus = 'PROGRESS';
-                } else if (isLibur) {
-                    actualStatus = 'LIBUR';
-                } else if (isCuti) {
-                    actualStatus = 'CUTI';
-                } else if (isSakit) {
-                    actualStatus = 'SAKIT';
-                } else if (isBantek) {
-                    actualStatus = 'BANTEK';
-                } else if (isPiket) {
-                    actualStatus = 'PIKET';
-                } else if (stat === 'IDLE') {
-                    actualStatus = 'IDLE';
-                }
+                if (statusFilter === 'MASUK') return isMasukPagi;
+                if (statusFilter === 'PROGRESS') return stat === 'PROGRESS';
+                if (statusFilter === 'IDLE') return stat === 'IDLE' && !isLibur && !isCuti && !isSakit;
+                if (statusFilter === 'PIKET') return isPiket;
+                if (statusFilter === 'LIBUR') return isLibur;
+                if (statusFilter === 'SAKIT') return isSakit;
+                if (statusFilter === 'CUTI') return isCuti;
 
-                return actualStatus === statusFilter;
+                return true;
              });
           }
           
@@ -484,8 +475,9 @@
       document.getElementById('content-live').classList.add('d-none');
       
       try {
-        const response = await fetch('/api/dashboard');
-        dashboardDataFull = await response.json();
+       const response = await fetch('/api/dashboard');
+        const rawJson = await response.json();
+        dashboardDataFull = Array.isArray(rawJson) ? rawJson : (rawJson.data || []);
         populateSADropdown(dashboardDataFull);
         applyGlobalFilter();
       } catch (error) {
@@ -1325,7 +1317,7 @@ function renderCards(data) {
       }
     }
 
-    function focusTechnicianOnMap(nama, lat, lng) {
+  function focusTechnicianOnMap(nama, lat, lng) {
       switchTab('map');
       setTimeout(() => {
         if (leafletMap) {
@@ -1336,6 +1328,12 @@ function renderCards(data) {
         }
       }, 400);
     }
+
+    // JALANKAN OTOMATIS SAAT HALAMAN PERTAMA KALI DIBUKA
+    window.addEventListener('DOMContentLoaded', () => {
+      loadData();
+    });
+
 	
   </script>
    <footer style="text-align: right; padding: 12px 24px 16px; font-size: 0.72rem; color: #030c17; font-family: 'Poppins', sans-serif;">
